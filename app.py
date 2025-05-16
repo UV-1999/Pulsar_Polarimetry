@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 
 # Section where we import new functions for plotting:
-from module.plot_waterfalls_and_profiles import plot_waterfalls_and_profiles 
+from modules.plot_waterfalls_and_profiles import plot_waterfalls_and_profiles 
 # #
 
 # --- Page configuration ---
