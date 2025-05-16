@@ -63,10 +63,6 @@ if uploaded_file is not None:
         # Call your function here, pass the start_phase and end_phase as arguments
             fig = plot_waterfalls_and_profiles(data, start_phase, end_phase)
             st.pyplot(fig)
-
-        st.header("Distributions of polarization degree (total p, linear L, and circular V)")
-        fig = plot_polarisation_distributions(data, 0.1)
-        st.pyplot(fig)
         
         ##########################################################################################################################
 else:
