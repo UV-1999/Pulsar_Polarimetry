@@ -2,7 +2,8 @@ import streamlit as st
 import numpy as np
 
 # Section where we import new functions for plotting:
-from modules.plot_waterfalls_and_profiles import plot_waterfalls_and_profiles 
+import modules.plot_waterfalls_and_profiles
+import modules.plot_polarisation_distributions
 # #
 
 # --- Page configuration ---
@@ -64,6 +65,9 @@ if uploaded_file is not None:
             fig = plot_waterfalls_and_profiles(data, start_phase, end_phase)
             st.pyplot(fig)
 
+        st.header("Distributions of polarization degree (total p, linear L, and circular V)")
+        fig = plot_polarisation_distributions(data, 0.1)
+        st.pyplot(fig)
         
         ##########################################################################################################################
 else:
