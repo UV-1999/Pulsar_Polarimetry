@@ -2,8 +2,7 @@ import streamlit as st
 import numpy as np
 
 # Section where we import new functions for plotting:
-import modules.plot_waterfalls_and_profiles
-import modules.plot_polarisation_distributions
+from modules.plot_waterfalls_and_profiles import *
 # #
 
 # --- Page configuration ---
