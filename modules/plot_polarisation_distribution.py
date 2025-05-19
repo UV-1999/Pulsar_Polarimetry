@@ -14,7 +14,7 @@ def plot_polarization_histograms(data, fraction=0.1, quantity_bins=200):
   
     # Define on-pulse as where intensity >= fraction * max
     threshold = fraction * np.max(I.mean(axis=0))
-    on_pulse_mask = I >= threshold
+    on_pulse_mask = I.mean(axis=0) >= threshold
     off_pulse_mask = ~on_pulse_mask
     on_pulse_indices = np.where(on_pulse_mask)[0]
     off_pulse_indices = np.where(off_pulse_mask)[0]
