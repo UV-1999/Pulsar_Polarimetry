@@ -3,6 +3,9 @@ import numpy as np
 
 # Section where we import new functions for plotting:
 from modules.plot_waterfalls_and_profiles import *
+from plot_polarisation_parameters import *
+from plot_polarisation_distribution import *
+from plot_poincare_sphere import *
 # #
 
 # --- Page configuration ---
@@ -29,10 +32,6 @@ This Streamlit app takes in data in numpy array format (.npy) available at the M
 This app helps researchers to visualize patterns in data by providing the following plots and more to come in the future:
 
 - Waterfalls and Integrated profiles for each Stokes channel (I, Q, U, V)
-- Distributions of polarization degree (total p, linear L, and circular V)
-- Polarization Angle (PA) vs Pulse Phase, for Integrated profile  
-- Poincaré Sphere views segmented by pulse phase  
-- Histograms and greyscale distribution plots at selected pulse phases
 
 For help, queries and suggestions, please contact **Piyush Marmat**.
 """)
@@ -63,7 +62,21 @@ if uploaded_file is not None:
         # Call your function here, pass the start_phase and end_phase as arguments
             fig = plot_waterfalls_and_profiles(data, start_phase, end_phase)
             st.pyplot(fig)
-        
+
+        st.header("Polarization parameters across phase (total p, linear L, circular V, PA and EA)")
+        st.markdown("Plotting how these parameters change with rotational phase")
+        fig = plot_polarisation_parameters(data)
+            st.pyplot(fig)
+
+        st.header("2D histograms of distribution of polarization parameters (total p, linear L, circular V, PA and EA)")
+        st.markdown("Plotting how these parameters change with rotational phase across all pulses")
+        fig = plot_polarisation_distribution(data)
+            st.pyplot(fig)
+
+        st.header("Trajectory of polarization state on the Poincare sphere")
+        st.markdown("How polarisation state evolve with rotational phase")
+        fig = plot_poincare_sphere(data)
+            st.pyplot(fig)
         ##########################################################################################################################
 else:
     st.info("Please upload a valid NumPy .npy or .npz file containing your pulsar data.")
