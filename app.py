@@ -5,6 +5,7 @@ import numpy as np
 from modules.plot_waterfalls_and_profiles import *
 from plot_polarisation_parameters import *
 from plot_polarisation_distribution import *
+from plot_phase_slice_histograms_by_phase import *
 from plot_poincare_sphere import *
 # #
 
