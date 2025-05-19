@@ -1,63 +1,49 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_polarisation_parameters(data, fraction=0.1):
-    num_pulses, _, num_bins = data.shape
+def plot_polarization_parameters(data, fraction=0.1, quantity_bins=200):
+    """
+    Plots PA, EA, I, P/I, L/I, and V/I vs phase (integrated over pulses)
+    """
+    num_pulses, _, num_phase_bins = data.shape
+    phase_axis = np.linspace(0, 1, num_phase_bins)
 
-    I = data[:, 0, :]
-    Q = data[:, 1, :]
-    U = data[:, 2, :]
-    V = data[:, 3, :]
-
-    I_mean = np.mean(I, axis=0)
-
-    # Define on-pulse region
-    threshold = fraction * np.max(I_mean)
-    on_pulse_mask = I_mean >= threshold
+    # Extract Stokes parameters (intergrated over all pulse, intensity as a function of phase)
+    I = data[:, 0, :].mean(axis=0)
+    Q = data[:, 1, :].mean(axis=0)
+    U = data[:, 2, :].mean(axis=0)
+    V = data[:, 3, :].mean(axis=0)
+  
+    # Define on-pulse as where intensity >= fraction * max
+    threshold = fraction * np.max(I)
+    on_pulse_mask = I >= threshold
+    off_pulse_mask = ~on_pulse_mask
     on_pulse_indices = np.where(on_pulse_mask)[0]
+    off_pulse_indices = np.where(off_pulse_mask)[0]
 
-    # Divide on-pulse region into thirds
-    n = len(on_pulse_indices)
-    if n < 3:
-        raise ValueError("On-pulse region too small to divide into thirds.")
+    # Calculate off-pulse standard deviation
+    off_pulse_std = np.std(I[off_pulse_mask])
 
-    left_bin = on_pulse_indices[n // 6]
-    center_bin = on_pulse_indices[n // 2]
-    right_bin = on_pulse_indices[5 * n // 6]
+    # Derived quantities
+    L = np.sqrt(Q**2 + U**2)
+    L_true = np.zeros_like(L)
+    L_sigma = L /  off_pulse_std
+    mask = L_sigma >= 1.57
+    L_true[mask] =  off_pulse_std * np.sqrt(L_sigma[mask]**2 - 1)
+    p_frac = np.where(I != 0, np.sqrt(Q**2 + U**2 + V**2) / I, 0)
+    l_frac = np.where(I != 0, L_true / I, 0)
+    v_frac = np.where(I != 0, V / I, 0)
+    absv_frac = np.where(I != 0, np.abs(V) / I, 0)
+    PA = 0.5 * np.arctan2(U, Q)
+    EA = 0.5 * np.arctan2(V, L_true)
 
-    selected_bins = {
-        "Left": left_bin,
-        "Center": center_bin,
-        "Right": right_bin
-    }
+    quantities = [PA, EA, I, p_frac, l_frac, v_frac, absv_frac]
+    labels = [
+        "Polarization Angle (PA) [rad]",
+        "Bias Corrected Ellipticity Angle (EA) [rad]",
+        "Total Intensity (I)", "polarised fraction (p)",
+        "Bias Corrected Linear Polarization Fraction (L/I)",
+        "Circular Polarization Fraction (V/I), Absolute Circular Polarization Fraction (|V|/I)"
+    ]
 
-    fig, axs = plt.subplots(3, 3, figsize=(15, 10))
-    fig.suptitle("Polarisation Distributions at Selected Pulse Longitudes")
-
-    for i, (label, bin_idx) in enumerate(selected_bins.items()):
-        I_bin = I[:, bin_idx]
-        Q_bin = Q[:, bin_idx]
-        U_bin = U[:, bin_idx]
-        V_bin = V[:, bin_idx]
-
-        L_bin = np.sqrt(Q_bin**2 + U_bin**2)
-        p_bin = np.sqrt(Q_bin**2 + U_bin**2 + V_bin**2) / I_bin
-        V_abs_bin = np.abs(V_bin)
-
-        # Clean up division by zero or invalid values
-        p_bin[~np.isfinite(p_bin)] = 0
-
-        axs[i, 0].hist(p_bin, bins=50, color='blue', alpha=0.7)
-        axs[i, 0].set_title(f"{label} - Total p")
-        axs[i, 0].set_xlabel("p")
-        
-        axs[i, 1].hist(L_bin, bins=50, color='orange', alpha=0.7)
-        axs[i, 1].set_title(f"{label} - Linear L")
-        axs[i, 1].set_xlabel("L")
-        
-        axs[i, 2].hist(V_abs_bin, bins=50, color='green', alpha=0.7)
-        axs[i, 2].set_title(f"{label} - Circular |V|")
-        axs[i, 2].set_xlabel("|V|")
-
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
-    return fig
+    
