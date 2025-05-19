@@ -1,5 +1,5 @@
 
-def plot_polarization_histograms(data, fraction=0.1):
+def plot_polarization_histograms(data, fraction=0.1, quantity_bins=200):
     """
     Plots 2D histograms of PA, EA, I, P/I, L/I, and V/I vs phase.
     Each subplot shows intensity of occurrence of quantity vs phase.
