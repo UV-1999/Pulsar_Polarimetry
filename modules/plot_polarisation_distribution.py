@@ -68,3 +68,4 @@ def plot_polarization_histograms(data, fraction=0.1, quantity_bins=200):
 
     axs[-1].set_xlabel("Pulse Phase (0 to 1)")
     fig.suptitle("2D Histograms of Polarization Quantities vs Phase")
+    return fig
