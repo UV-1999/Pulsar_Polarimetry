@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_polarisation_distributions(data, fraction=0.1):
+def plot_polarisation_parameters(data, fraction=0.1):
     num_pulses, _, num_bins = data.shape
 
     I = data[:, 0, :]
