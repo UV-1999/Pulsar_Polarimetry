@@ -74,6 +74,11 @@ if uploaded_file is not None:
         fig = plot_polarisation_distribution(data)
             st.pyplot(fig)
 
+        st.header("1D histograms of distribution of polarization parameters (total p, linear L, circular V, PA and EA) at specific phases")
+        st.markdown("")
+        fig = plot_phase_slice_histograms_by_phase(data)
+            st.pyplot(fig)
+
         st.header("Trajectory of polarization state on the Poincare sphere")
         st.markdown("How polarisation state evolve with rotational phase")
         fig = plot_poincare_sphere(data)
