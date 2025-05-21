@@ -92,8 +92,9 @@ if uploaded_file is not None:
     st.header("Waterfall and Integrated Profiles")
     st.markdown("Visualize how each Stokes parameter evolves with pulse number and rotational phase. You can zoom in on a selected phase range.")
 
-    default_start = 0.33
-    default_end = 0.66
+    default_start = 0.40
+    default_mid = 0.5
+    default_end = 0.60
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -149,7 +150,7 @@ if uploaded_file is not None:
     with col3:
         left_phase = st.number_input("left phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
     with col4:
-        mid_phase = st.number_input("mid phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
+        mid_phase = st.number_input("mid phase", min_value=0.0, max_value=1.0, value=default_mid, step=0.01)
     with col5:
         right_phase = st.number_input("right phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
         
