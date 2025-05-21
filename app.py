@@ -49,7 +49,7 @@ with st.expander("About this App", expanded=True):
 # --- File Upload ---
 st.header("Upload Data File")
 st.markdown("Upload a `.npy` or `.npz` file containing single-pulse polarimetric data in shape `(num_pulses, 4, num_phase_bins)`")
-st.warning("Reloading the page will clear your uploaded file. Be sure to download your results if needed.")
+st.warning("Reloading the page will clear your uploaded file. Be sure to download your results if needed. For any upload error, try hard refreshing the page or run in private/icognito mode.")
 uploaded_file = st.file_uploader("Choose a file", type=["npy", "npz"])
 
 @st.cache_data(show_spinner=False)
