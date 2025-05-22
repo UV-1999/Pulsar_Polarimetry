@@ -34,7 +34,7 @@ with st.expander("About this App", expanded=True):
     - Polarization parameter vs pulse phase intergrated over all pulses.
     - 2D Histograms of polarization parameters with 1D Histograms for specific phases.
     - Trajectories of polarization state on the Poincaré sphere (Aitoff projection and 3D) in specific phase region.
-    - Linear polarisation parameter is corrected for bias assuming on-pulse window to be full width at tenth (default) of maximum of the integrated profile.
+    - Linear polarisation parameter is corrected for bias assuming on-pulse window to be full width at a fraction of the maximum of the integrated profile.
     - On-pulse window can be changed after plotting the intergrated profile.
 
     **Abbreviations and symbols used:**
@@ -49,7 +49,7 @@ with st.expander("About this App", expanded=True):
 # --- File Upload ---
 st.header("Upload Data File")
 st.markdown("Upload a `.npy` or `.npz` file containing single-pulse polarimetric data in shape `(num_pulses, 4, num_phase_bins)`")
-st.warning("Reloading the page will clear your uploaded file. Be sure to download your results if needed. For any upload error, try hard refreshing the page or run in private/icognito mode.")
+st.warning("Reloading the page will clear your uploaded file. Be sure to download your results if needed.")
 uploaded_file = st.file_uploader("Choose a file", type=["npy", "npz"])
 
 @st.cache_data(show_spinner=False)
@@ -93,7 +93,7 @@ if uploaded_file is not None:
     st.markdown("Visualize how each Stokes parameter evolves with pulse number and rotational phase. You can zoom in on a selected phase range.")
 
     default_start = 0.40
-    default_mid = 0.5
+    default_mid = 0.50
     default_end = 0.60
 
     col1, col2, col3 = st.columns(3)
@@ -102,8 +102,8 @@ if uploaded_file is not None:
     with col2:
         end_phase = st.number_input("End phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     with col3:
-    	fraction = st.number_input("Fraction of maximum to define off-pulse cut-off", min_value=0.0, max_value=1.0, value=0.1, step=0.01)
-    
+    	fraction = st.number_input("Fraction of maximum to define off-pulse cut-off", min_value=0.0, max_value=1.0, value=0.01, step=0.01)
+    st.warning("The fraction of maximum of integrated profile should be chosen such that minimum number of spikes are observed in the fractional polarisation degree vs phase graph outside the on-pulse, without the fractional polarisation degree abruptly vanishing anywhere in the on-pulse.")
     apply_streamlit_theme_to_matplotlib()
     fig = plot_waterfalls_and_profiles(data, start_phase, end_phase, fraction)
     st.pyplot(fig)
@@ -120,12 +120,12 @@ if uploaded_file is not None:
     with col2:
         end_phase = st.number_input("Final phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
         
-    fig = plot_polarisation_parameters(data, start_phase, end_phase)
+    fig = plot_polarisation_parameters(data, start_phase, end_phase, fraction)
     st.pyplot(fig)
     
     
     # ---------------- Distribution Heatmaps ----------------
-    st.header("2D Phase-Resolved Parameter Histograms")
+    st.header("2D Phase-Resolved Parameter Histograms (Log-Color)")
     st.markdown("""
     These heatmaps show how each parameter is distributed across both phase and multiple pulses, providing insight into the variability of polarization states.
     """)
