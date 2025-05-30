@@ -31,11 +31,13 @@ with st.expander("About this App", expanded=True):
     
     **Features included as on {today}:**
     - Waterfall plots and integrated profiles of each Stokes parameter.
+    - Individual pulse profiles for selected pulse indices.
     - Polarization parameter vs pulse phase intergrated over all pulses.
     - 2D Histograms of polarization parameters with 1D Histograms for specific phases.
     - Trajectories of polarization state on the Poincaré sphere (Aitoff projection and 3D) in specific phase region.
     - Linear polarisation parameter is corrected for bias assuming on-pulse window to be full width at a fraction of the maximum of the integrated profile.
     - On-pulse window can be changed after plotting the intergrated profile.
+    - Plot radius of curvature (via circle fitting) of the polarization trajectory on the Poincaré sphere as a function of pulse phase
 
     **Abbreviations and symbols used:**
     - I, Q, U, V are the four Stokes parameters.
@@ -101,11 +103,21 @@ if uploaded_file is not None:
         start_phase = st.number_input("Start phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
     with col2:
         end_phase = st.number_input("End phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
+    
     with col3:
-    	fraction = st.number_input("Fraction of maximum to define off-pulse cut-off", min_value=0.0, max_value=1.0, value=0.01, step=0.01)
+    	fraction = st.number_input("Fraction of maximum to define off-pulse cut-off", min_value=0.0, max_value=1.0, value=0.05, step=0.01)
     st.warning("The fraction of maximum of integrated profile should be chosen such that minimum number of spikes are observed in the fractional polarisation degree vs phase graph outside the on-pulse, without the fractional polarisation degree abruptly vanishing anywhere in the on-pulse.")
+    
     apply_streamlit_theme_to_matplotlib()
     fig = plot_waterfalls_and_profiles(data, start_phase, end_phase, fraction)
+    st.pyplot(fig)
+    
+    st.header("Individual Pulse Profile For A Selected Pulse Index")
+    col1 = st.columns(1)[0]
+    mindex = data.shape[0] - 1
+    with col1:
+        pulse_index = st.number_input("Pulse Index", min_value=0, max_value=mindex, value=0, step=1)
+    fig = plot_single_pulse_stokes(data, pulse_index)
     st.pyplot(fig)
     
     # ---------------- Polarisation Parameters ----------------
@@ -172,12 +184,17 @@ if uploaded_file is not None:
     fig = plot_poincare_aitoff_from_data(data, [start_phase, end_phase], fraction)
     st.pyplot(fig)
     
-    st.markdown("""
+    st.subheader("""
     Interactive 3D visualisation of the Poincaré Sphere
     """)
 
     fig = plot_interactive_poincare_sphere(data, [start_phase, end_phase], fraction)
     st.plotly_chart(fig, use_container_width=True)
+    st.subheader("""
+    Radius of curvature (via circle fitting) of the polarization trajectory on the Poincaré sphere as a function of pulse phase
+    """)
+    fig = plot_radius_of_curvature_from_data(data, [start_phase, end_phase], fraction)
+    st.pyplot(fig)
 
 else:
     st.info("Please upload a valid `.npy` or `.npz` file to begin.")
