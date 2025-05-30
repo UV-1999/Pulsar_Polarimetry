@@ -401,7 +401,7 @@ def find_radius(points):
     p1, p2, p3 = [np.array(p) / np.linalg.norm(p) for p in points]  # Ensure unit vectors
     # Compute normal vector of the plane
     normal = np.cross(p2 - p1, p3 - p1)
-    normal /= np.linalg.norm(normal)
+    normal /= np.linalg.norm(normal) if np.linalg.norm(normal) != 0 else 1
     # Distance from sphere center (origin) to plane
     # Since plane passes through p1, distance is |dot(p1, normal)|
     d = abs(np.dot(p1, normal))
