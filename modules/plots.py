@@ -18,7 +18,7 @@ def plot_single_pulse_stokes(data, pulse_index):
     fig, axs = plt.subplots(1, 4, figsize=(20, 4), sharex=True)
     
     for i, label in enumerate(POL_LABELS):
-        axs[i].plot(pulse_phase, data[pulse_index, i, :], color='black')
+        axs[i].plot(pulse_phase, data[pulse_index, i, :])
         axs[i].set_xlabel('Phase')
         axs[i].set_ylabel('Intensity')
         axs[i].grid(True)
