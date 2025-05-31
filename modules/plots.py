@@ -5,10 +5,9 @@ import matplotlib.ticker as ticker
 from scipy.stats import iqr
 from matplotlib import gridspec
 
-def plot_single_pulse_stokes(data, pulse_index):
+def plot_single_pulse_stokes(data, start_phase, end_phase, pulse_index):
     """
-    Plots the I, Q, U, V parameters vs phase for a single pulse index.
-    
+    Plots the I, Q, U, V parameters vs phase for a single pulse index. 
     Parameters:
         data (np.ndarray): Shape (n_pulses, 4, n_phase_bins), where axis 1 corresponds to I, Q, U, V.
     """
@@ -16,16 +15,20 @@ def plot_single_pulse_stokes(data, pulse_index):
     pulse_phase = np.linspace(0, 1, data.shape[2])
     max_index = data.shape[0] - 1
     fig, axs = plt.subplots(1, 4, figsize=(20, 4), sharex=True)
-    
     for i, label in enumerate(POL_LABELS):
+        mean_profile = data[:, i, :].mean(axis=0)
+        start_idx = np.searchsorted(pulse_phase, start_phase, side='left')
+        end_idx = np.searchsorted(pulse_phase, end_phase, side='right')
+        visible_segment = mean_profile[start_idx:end_idx]
+        y_min = visible_segment.min()
+        y_max = visible_segment.max()
+        axs[i].set_ylim(y_min - 0.1 * abs(y_max - y_min), y_max + 0.1 * abs(y_max - y_min))        
         axs[i].plot(pulse_phase, data[pulse_index, i, :])
         axs[i].set_xlabel('Phase')
         axs[i].set_ylabel('Intensity')
         axs[i].grid(True)
-
     plt.tight_layout()
     return fig
-
 
 def plot_waterfalls_and_profiles(data, start_phase, end_phase, fraction):
     POL_LABELS = ['I', 'Q', 'U', 'V']
@@ -68,12 +71,14 @@ def plot_polarisation_parameters(data, start_phase, end_phase, fraction):
     """
     num_pulses, _, num_phase_bins = data.shape
     phase_axis = np.linspace(0, 1, num_phase_bins)
- 
+
+    # Extract Stokes parameters (averaged over pulses)
     I = data[:, 0, :].mean(axis=0)
     Q = data[:, 1, :].mean(axis=0)
     U = data[:, 2, :].mean(axis=0)
     V = data[:, 3, :].mean(axis=0)
     
+    # Define on-pulse and off-pulse regions
     threshold = fraction * np.max(I)
     on_pulse_mask = I >= threshold
     off_pulse_mask = ~on_pulse_mask
@@ -99,6 +104,7 @@ def plot_polarisation_parameters(data, start_phase, end_phase, fraction):
     PA = 0.5 * np.arctan2(U, Q) * 180 / np.pi
     EA = 0.5 * np.arctan2(V, L_true) * 180 / np.pi
 
+    # Quantities and labels to plot
     quantities = [PA, EA, p_frac, l_frac, v_frac, absv_frac]
     labels = [
         "PA [deg]",
@@ -109,6 +115,7 @@ def plot_polarisation_parameters(data, start_phase, end_phase, fraction):
         "|V/I|"
     ]
 
+    # Plotting
     fig, axs = plt.subplots(3, 2 , figsize=(12, 10))
     axs = axs.flatten()
 
@@ -129,16 +136,19 @@ def plot_polarisation_histograms(data, start_phase, end_phase, fraction, base_qu
     num_pulses, _, num_phase_bins = data.shape
     phase_axis = np.linspace(0, 1, num_phase_bins)
 
+    # Extract Stokes parameters
     I = data[:, 0, :]
     Q = data[:, 1, :]
     U = data[:, 2, :]
     V = data[:, 3, :]
 
+    # On-pulse mask
     threshold = fraction * np.max(I.mean(axis=0))
     on_pulse_mask = I.mean(axis=0) >= threshold
     off_pulse_mask = ~on_pulse_mask
     off_pulse_std = np.std(I.mean(axis=0)[off_pulse_mask])
 
+    # Derived quantities and De-biasing
     L = np.sqrt(Q**2 + U**2)
     L_true = np.zeros_like(L)
     L_sigma = L / off_pulse_std
@@ -189,6 +199,7 @@ def plot_polarisation_histograms(data, start_phase, end_phase, fraction, base_qu
         ax.set_ylabel(label, fontsize=10)
         ax.grid(False)
 
+        # Limit y-axis for subplots 2 through 5
         if ((idx > 1) and (idx < 5)):
             ax.set_ylim(threshold, 1)
         if idx == 5:
@@ -199,14 +210,15 @@ def plot_polarisation_histograms(data, start_phase, end_phase, fraction, base_qu
     return fig
 
 
-def plot_phase_slice_histograms_by_phase(data, phase_values, fraction, default_bins=200):
+def plot_phase_slice_histograms_by_phase(data, left_phase, mid_phase, right_phase, fraction, default_bins=200):
     """
     Plots 1D histograms of polarization quantities at specified phase values,
     with dynamic bin count based on data spread.
     """
     num_pulses, _, num_phase_bins = data.shape
     phase_axis = np.linspace(0, 1, num_phase_bins)
-
+     
+    phase_values = [left_phase, mid_phase, right_phase]
     # Convert normalized phase values to closest phase bin indices
     phase_bins = [np.argmin(np.abs(phase_axis - val)) for val in phase_values]
 
@@ -220,6 +232,7 @@ def plot_phase_slice_histograms_by_phase(data, phase_values, fraction, default_b
     off_pulse_mask = mean_I < threshold
     off_pulse_std = np.std(I[:, off_pulse_mask])
 
+    # Derived quantities and De-biasing
     L = np.sqrt(Q**2 + U**2)
     L_true = np.zeros_like(L)
     L_sigma = L / off_pulse_std
@@ -270,7 +283,7 @@ def plot_phase_slice_histograms_by_phase(data, phase_values, fraction, default_b
     return fig
 
 
-def plot_poincare_aitoff_from_data(data, segments_phase_ranges, fraction):
+def plot_poincare_aitoff_from_data(data, start_phase, end_phase, fraction):
     """
     Plot polarization trajectories on the Poincaré sphere using Aitoff projection,
     colored by phase within the segment.
@@ -283,27 +296,32 @@ def plot_poincare_aitoff_from_data(data, segments_phase_ranges, fraction):
     U = data[:, 2, :].mean(axis=0)
     V = data[:, 3, :].mean(axis=0)
 
+    # Define on-pulse region
     threshold = fraction * np.max(I)
     on_pulse_mask = I >= threshold
     off_pulse_mask = ~on_pulse_mask
     sigma_off = np.std(I[off_pulse_mask])
 
+    # Compute derived quantities
     L = np.sqrt(Q**2 + U**2)
     L_true = np.zeros_like(L)
     L_sigma = L / sigma_off
     mask = L_sigma >= 1.57
     L_true[mask] = sigma_off * np.sqrt(L_sigma[mask]**2 - 1)
 
+    # Compute PA and EA (in radians)
     PA = 0.5 * np.arctan2(U, Q) 
     EA = 0.5 * np.arctan2(V, L_true)
 
-    start_idx = np.searchsorted(phase_axis, segments_phase_ranges[0])
-    end_idx = np.searchsorted(phase_axis, segments_phase_ranges[1])
+    # Convert phase ranges to bin indices
+    start_idx = np.searchsorted(phase_axis, start_phase)
+    end_idx = np.searchsorted(phase_axis, end_phase)
 
+    # Prepare lon, lat and colors
     lon = 2 * PA[start_idx:end_idx]
     lat = 2 * EA[start_idx:end_idx]
     lon = np.mod(lon + np.pi, 2 * np.pi) - np.pi  # Wrap to [-π, π]
-    colors = np.linspace(segments_phase_ranges[0], segments_phase_ranges[1], end_idx-start_idx)  # Phase gradient
+    colors = np.linspace(start_phase, end_phase, end_idx-start_idx)  # Phase gradient
 
     # Plot in Aitoff projection
     fig = plt.figure(figsize=(10, 5))
@@ -315,7 +333,7 @@ def plot_poincare_aitoff_from_data(data, segments_phase_ranges, fraction):
     plt.tight_layout()
     return fig
     
-def plot_interactive_poincare_sphere(data, segments_phase_ranges, fraction):
+def plot_interactive_poincare_sphere(data, start_phase, end_phase, fraction):
     """
     Create an interactive 3D Poincaré sphere plot using Plotly.
 
@@ -352,7 +370,6 @@ def plot_interactive_poincare_sphere(data, segments_phase_ranges, fraction):
     z = np.sin(lat)
 
     # Filter segment
-    start_phase, end_phase = segments_phase_ranges
     start_idx = np.searchsorted(phase_axis, start_phase)
     end_idx = np.searchsorted(phase_axis, end_phase)
 
@@ -410,7 +427,7 @@ def find_radius(points):
     r = np.sqrt(1 - dclip**2)
     return r  # In units of sphere radius (assumed 1)
 
-def plot_radius_of_curvature_from_data(data, segments_phase_ranges, fraction):
+def plot_radius_of_curvature_from_data(data, start_phase, end_phase, fraction):
     """
     Plot radius of curvature (via circle fitting) of the polarization trajectory on the Poincaré sphere
     as a function of pulse phase 
@@ -428,21 +445,25 @@ def plot_radius_of_curvature_from_data(data, segments_phase_ranges, fraction):
     off_pulse_mask = ~on_pulse_mask
     sigma_off = np.std(I[off_pulse_mask])
 
+    # Derived quantities
     L = np.sqrt(Q**2 + U**2)
     L_true = np.zeros_like(L)
     L_sigma = L / sigma_off
     mask = L_sigma >= 1.57
     L_true[mask] = sigma_off * np.sqrt(L_sigma[mask]**2 - 1)
 
+    # Compute PA and EA (in radians)
     PA = 0.5 * np.arctan2(U, Q)
     EA = 0.5 * np.arctan2(V, L_true)
 
+    # Convert to 3D points on the Poincaré sphere
     x = np.cos(2 * PA) * np.cos(2 * EA)
     y = np.sin(2 * PA) * np.cos(2 * EA)
     z = np.sin(2 * EA)
 
-    start_idx = np.searchsorted(phase_axis, segments_phase_ranges[0])
-    end_idx = np.searchsorted(phase_axis, segments_phase_ranges[1])
+    # Restrict to segment
+    start_idx = np.searchsorted(phase_axis, start_phase)
+    end_idx = np.searchsorted(phase_axis, end_phase)
 
     points = np.vstack((x[start_idx:end_idx], y[start_idx:end_idx], z[start_idx:end_idx])).T
     segment_phase = phase_axis[start_idx:end_idx]
@@ -455,9 +476,11 @@ def plot_radius_of_curvature_from_data(data, segments_phase_ranges, fraction):
         radius = find_radius(triplet)
         radii.append(radius)
         phase_centers.append(segment_phase[i + 1])  # phase at center of triplet
-
+    
+    # Plot
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(phase_centers, radii, marker='o', linestyle='-')
+    ax.plot(phase_centers, radii, linestyle='-', color='gray', alpha=0.5)
+    sc = ax.scatter(phase_centers, radii, c=phase_centers, cmap='viridis', s=50)
     ax.set_xlabel('Pulse Phase')
     ax.set_ylabel('Radius of Fitted Circle')
     ax.grid(True)
