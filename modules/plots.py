@@ -22,7 +22,7 @@ def plot_single_pulse_stokes(data, start_phase, end_phase, pulse_index):
         visible_segment = mean_profile[start_idx:end_idx]
         y_min = visible_segment.min()
         y_max = visible_segment.max()
-        ax_profile.set_xlim(start_phase, end_phase)
+        axs[i].set_xlim(start_phase, end_phase)
         axs[i].set_ylim(y_min - 0.1 * abs(y_max - y_min), y_max + 0.1 * abs(y_max - y_min))        
         axs[i].plot(pulse_phase, data[pulse_index, i, :])
         axs[i].set_xlabel('Phase')
