@@ -68,6 +68,10 @@ theme_choice = st.radio("Select theme for plots:", ["Light", "Dark"], horizontal
 # Store in session_state to persist across reruns
 st.session_state["theme"] = theme_choice.lower()
 
+default_start = 0.40
+default_mid   = 0.50
+default_end   = 0.60
+
 def apply_streamlit_theme_to_matplotlib():
     import matplotlib.pyplot as plt
     theme = st.session_state.get("theme", "light")
@@ -76,6 +80,148 @@ def apply_streamlit_theme_to_matplotlib():
         plt.style.use("dark_background")
     else:
         plt.style.use("default")
+
+@st.fragment
+def H1(data):
+    st.header("Waterfall and Integrated Profiles")
+    st.markdown("Visualize how each Stokes parameter evolves with pulse number and rotational phase. You can zoom in on a selected phase range.")
+    col1, col2 = st.columns(2)
+    with col1:
+        start_phase = st.number_input("Start Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+    with col2:
+        end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
+    @st.cache_data
+    def generate_plot1(data, start_phase, end_phase, fraction):
+        apply_streamlit_theme_to_matplotlib()
+        return plot_waterfalls_and_profiles(data, start_phase, end_phase, fraction)
+    fig = generate_plot1(data, start_phase, end_phase, fraction)
+    st.pyplot(fig)
+    
+@st.fragment
+def H2(data):
+    st.header("Individual Pulse Profile For A Selected Pulse Index")
+    mindex = data.shape[0] - 1
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        start_phase = st.number_input("Starting Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+    with col2:
+        end_phase = st.number_input("Ending Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
+    with col3:
+        pulse_index = st.number_input("Pulse Index", min_value=0, max_value=mindex, value=0, step=1)
+    @st.cache_data
+    def generate_plot2(data, start_phase, end_phase, pulse_index):
+        apply_streamlit_theme_to_matplotlib()
+        return plot_single_pulse_stokes(data, start_phase, end_phase, pulse_index)
+    fig = generate_plot2(data, start_phase, end_phase, pulse_index)
+    st.pyplot(fig)
+    
+@st.fragment
+def H3(data):
+    st.header("Polarisation Parameters vs Phase")
+    st.markdown("""
+    Plot of key polarization parameters as a function of rotational phase. You can zoom in on a selected phase range.
+    """)
+    col1, col2 = st.columns(2)
+    with col1:
+        start_phase = st.number_input("start phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+    with col2:
+        end_phase = st.number_input("end phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
+    @st.cache_data
+    def generate_plot3(data, start_phase, end_phase, fraction):
+        apply_streamlit_theme_to_matplotlib()
+        return plot_polarisation_parameters(data, start_phase, end_phase, fraction)
+    fig = generate_plot3(data, start_phase, end_phase, fraction)
+    st.pyplot(fig)
+    
+@st.fragment
+def H4(data):
+    st.header("2D Phase-Resolved Parameter Histograms (Log-Color)")
+    st.markdown("""
+    These heatmaps show how each parameter is distributed across both phase and multiple pulses, providing insight into the variability of polarization states.
+    """)
+    col1, col2 = st.columns(2)
+    with col1:
+        start_phase = st.number_input("Initial Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+    with col2:
+        end_phase = st.number_input("Final Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
+    @st.cache_data
+    def generate_plot4(data, start_phase, end_phase, fraction):
+        apply_streamlit_theme_to_matplotlib()
+        return plot_polarisation_histograms(data, start_phase, end_phase, fraction)
+    fig = generate_plot4(data, start_phase, end_phase, fraction)
+    st.pyplot(fig)
+    
+@st.fragment
+def H5(data):
+    st.header("1D Parameter Histograms at Selected Phases")
+    st.markdown("""
+    Explore how polarization parameters are distributed at individual phase slices across all pulses.
+    """)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        left_phase = st.number_input("left phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+    with col2:
+        mid_phase = st.number_input("mid phase", min_value=0.0, max_value=1.0, value=default_mid, step=0.01)
+    with col3:
+        right_phase = st.number_input("right phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
+    @st.cache_data
+    def generate_plot5(data, left_phase, mid_phase, right_phase, fraction):
+        apply_streamlit_theme_to_matplotlib()
+        return plot_phase_slice_histograms_by_phase(data, left_phase, mid_phase, right_phase, fraction)
+    fig = generate_plot5(data, left_phase, mid_phase, right_phase, fraction)
+    st.pyplot(fig)
+    
+@st.fragment
+def H6(data):
+    st.header("Polarization State on the Poincaré Sphere")
+    st.subheader("""
+    Hammer-Aitoff Projection of the Poincaré Sphere
+    """)
+    col1, col2 = st.columns(2)
+    with col1:
+        start_phase = st.number_input("start_phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+    with col2:
+        end_phase = st.number_input("end_phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
+    @st.cache_data
+    def generate_plot6(data, start_phase, end_phase, fraction):
+        apply_streamlit_theme_to_matplotlib()
+        return plot_poincare_aitoff_from_data(data, start_phase, end_phase, fraction)
+    fig = generate_plot6(data, start_phase, end_phase, fraction)
+    st.pyplot(fig)
+    
+@st.fragment
+def H7(data):
+    st.subheader("""
+    Interactive 3D visualisation of the Poincaré Sphere
+    """)
+    col1, col2 = st.columns(2)
+    with col1:
+        start_phase = st.number_input("starting phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+    with col2:
+        end_phase = st.number_input("ending phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
+    @st.cache_data
+    def generate_plot7(data, start_phase, end_phase, fraction):
+        apply_streamlit_theme_to_matplotlib()
+        return plot_interactive_poincare_sphere(data, start_phase, end_phase, fraction)
+    fig = generate_plot7(data, start_phase, end_phase, fraction)
+    st.plotly_chart(fig, use_container_width=True)
+
+@st.fragment
+def H8(data):
+    st.subheader("""
+    Radius of curvature (via circle fitting) of the polarization trajectory on the Poincaré sphere as a function of pulse phase
+    """)
+    col1, col2 = st.columns(2)
+    with col1:
+        start_phase = st.number_input("First Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+    with col2:
+        end_phase = st.number_input("Last Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
+    @st.cache_data
+    def generate_plot8(data, start_phase, end_phase, fraction):
+        apply_streamlit_theme_to_matplotlib()
+        return plot_radius_of_curvature_from_data(data, start_phase, end_phase, fraction)
+    fig = generate_plot8(data, start_phase, end_phase, fraction)
+    st.pyplot(fig)
 
 # --- Load and check data ---
 if uploaded_file is not None:
@@ -90,111 +236,16 @@ if uploaded_file is not None:
         st.error("Invalid data shape. Expected shape: (num_pulses, 4, num_phase_bins)")
         st.stop()
 
-    # ---------------- Waterfall & Profiles ----------------
-    st.header("Waterfall and Integrated Profiles")
-    st.markdown("Visualize how each Stokes parameter evolves with pulse number and rotational phase. You can zoom in on a selected phase range.")
-
-    default_start = 0.40
-    default_mid = 0.50
-    default_end = 0.60
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        start_phase = st.number_input("Start phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
-    with col2:
-        end_phase = st.number_input("End phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
-    
-    with col3:
-    	fraction = st.number_input("Fraction of maximum to define off-pulse cut-off", min_value=0.0, max_value=1.0, value=0.05, step=0.01)
+    fraction = st.number_input("Fraction of maximum to define off-pulse cut-off", min_value=0.0, max_value=1.0, value=0.05, step=0.01)
     st.warning("The fraction of maximum of integrated profile should be chosen such that minimum number of spikes are observed in the fractional polarisation degree vs phase graph outside the on-pulse, without the fractional polarisation degree abruptly vanishing anywhere in the on-pulse.")
+    H1(data)
+    H2(data)
+    H3(data)
+    H4(data)
+    H5(data)
+    H6(data)
+    H7(data)
+    H8(data)
     
-    apply_streamlit_theme_to_matplotlib()
-    fig = plot_waterfalls_and_profiles(data, start_phase, end_phase, fraction)
-    st.pyplot(fig)
-    
-    st.header("Individual Pulse Profile For A Selected Pulse Index")
-    col1 = st.columns(1)[0]
-    mindex = data.shape[0] - 1
-    with col1:
-        pulse_index = st.number_input("Pulse Index", min_value=0, max_value=mindex, value=0, step=1)
-    fig = plot_single_pulse_stokes(data, pulse_index)
-    st.pyplot(fig)
-    
-    # ---------------- Polarisation Parameters ----------------
-    st.header("Polarisation Parameters vs Phase")
-    st.markdown("""
-    Plot of key polarization parameters as a function of rotational phase. You can zoom in on a selected phase range.
-    """)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        start_phase = st.number_input("Initial phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
-    with col2:
-        end_phase = st.number_input("Final phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
-        
-    fig = plot_polarisation_parameters(data, start_phase, end_phase, fraction)
-    st.pyplot(fig)
-    
-    
-    # ---------------- Distribution Heatmaps ----------------
-    st.header("2D Phase-Resolved Parameter Histograms (Log-Color)")
-    st.markdown("""
-    These heatmaps show how each parameter is distributed across both phase and multiple pulses, providing insight into the variability of polarization states.
-    """)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        start_phase = st.number_input("First phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
-    with col2:
-        end_phase = st.number_input("Last phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
-    
-    fig = plot_polarisation_histograms(data, start_phase, end_phase, fraction)
-    st.pyplot(fig)
-
-    
-    # ---------------- Phase Slice Histograms ----------------
-    st.header("1D Parameter Histograms at Selected Phases")
-    st.markdown("""
-    Explore how polarization parameters are distributed at individual phase slices across all pulses.
-    """)
-    
-    col3, col4, col5 = st.columns(3)
-    with col3:
-        left_phase = st.number_input("left phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
-    with col4:
-        mid_phase = st.number_input("mid phase", min_value=0.0, max_value=1.0, value=default_mid, step=0.01)
-    with col5:
-        right_phase = st.number_input("right phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
-        
-    fig = plot_phase_slice_histograms_by_phase(data, [left_phase, mid_phase, right_phase], fraction)
-    st.pyplot(fig)
-
-    # ---------------- Poincaré Sphere ----------------
-    st.header("Polarization State on the Poincaré Sphere")
-    st.markdown("""
-    Hammer-Aitoff Projection of the Poincaré Sphere
-    """)
-    
-    col6, col7 = st.columns(2)
-    with col6:
-        start_phase = st.number_input("Starting phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
-    with col7:
-        end_phase = st.number_input("Ending phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
-
-    fig = plot_poincare_aitoff_from_data(data, [start_phase, end_phase], fraction)
-    st.pyplot(fig)
-    
-    st.subheader("""
-    Interactive 3D visualisation of the Poincaré Sphere
-    """)
-
-    fig = plot_interactive_poincare_sphere(data, [start_phase, end_phase], fraction)
-    st.plotly_chart(fig, use_container_width=True)
-    st.subheader("""
-    Radius of curvature (via circle fitting) of the polarization trajectory on the Poincaré sphere as a function of pulse phase
-    """)
-    fig = plot_radius_of_curvature_from_data(data, [start_phase, end_phase], fraction)
-    st.pyplot(fig)
-
 else:
     st.info("Please upload a valid `.npy` or `.npz` file to begin.")
