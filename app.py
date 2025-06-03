@@ -242,7 +242,8 @@ if uploaded_file is not None:
         st.error(f"Failed to load uploaded file: {e}")
         st.stop()
 
-st.header("Or download from a URL")
+st.header("Or download from the MeerTime database")
+st.warning("Typical URL looks like: https://psrweb.jb.man.ac.uk/meertime/singlepulse/J0304+1932/2021-01-25-18:54:21/1284/plots/2021-01-25-18:54:21.npz")
 url = st.text_input("Paste the full .npz file URL here:")
 with st.expander("Authentication"):
     username = st.text_input("Username")
