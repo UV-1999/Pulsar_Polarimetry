@@ -2,6 +2,10 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
+import requests
+from requests.auth import HTTPBasicAuth
+import io
+import re
 
 today = datetime.today().strftime("%B %d, %Y")
 
@@ -21,7 +25,6 @@ A data-analysis tool by for visualizing and exploring single-pulse polarimetry d
 <a href="https://psrweb.jb.man.ac.uk/meertime/singlepulse/" target="_blank">MeerTime Single Pulse Database</a>.
 </h4>
 """, unsafe_allow_html=True)
-
 
 # --- About section ---
 with st.expander("About this App", expanded=True):
@@ -48,41 +51,26 @@ with st.expander("About this App", expanded=True):
     **Need help or have any suggestions?** Reach out to <a href="https://uv-1999.github.io/" target="_blank">Piyush Marmat</a>.
     """, unsafe_allow_html=True)
 
-# --- File Upload ---
-st.header("Upload Data File")
-st.markdown("Upload a `.npy` or `.npz` file containing single-pulse polarimetric data in shape `(num_pulses, 4, num_phase_bins)`")
-st.warning("Reloading the page will clear your uploaded file. Be sure to download your results if needed.")
-uploaded_file = st.file_uploader("Choose a file", type=["npy", "npz"])
+theme_mode = st.radio("Theme", ["light", "dark"])
 
-@st.cache_data(show_spinner=False)
-def load_data(file):
-    if file.name.endswith('.npz'):
-        npzfile = np.load(file)
-        key = list(npzfile.keys())[0]
-        return npzfile[key]
-    else:
-        return np.load(file)
-
-theme_choice = st.radio("Select theme for plots:", ["Light", "Dark"], horizontal=True)
-
-# Store in session_state to persist across reruns
-st.session_state["theme"] = theme_choice.lower()
-
-default_start = 0.40
-default_mid   = 0.50
-default_end   = 0.60
-
-def apply_streamlit_theme_to_matplotlib():
-    import matplotlib.pyplot as plt
-    theme = st.session_state.get("theme", "light")
-    plt.rcdefaults()
+def apply_streamlit_theme_to_matplotlib(theme):
+    plt.rcdefaults()    
     if theme == "dark":
         plt.style.use("dark_background")
     else:
         plt.style.use("default")
 
+def load_data(uploaded_file):
+     if uploaded_file.name.endswith(".npz"):
+         with np.load(uploaded_file) as npzfile:
+             key = list(npzfile.keys())[0]
+             data = npzfile[key]
+     elif uploaded_file.name.endswith(".npy"):
+         data = np.load(uploaded_file)
+     return data
+
 @st.fragment
-def H1(data):
+def H1(data, theme_mode):
     st.header("Waterfall and Integrated Profiles")
     st.markdown("Visualize how each Stokes parameter evolves with pulse number and rotational phase. You can zoom in on a selected phase range.")
     col1, col2 = st.columns(2)
@@ -91,14 +79,14 @@ def H1(data):
     with col2:
         end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     @st.cache_data
-    def generate_plot1(data, start_phase, end_phase, fraction):
-        apply_streamlit_theme_to_matplotlib()
+    def generate_plot1(data, start_phase, end_phase, fraction, theme_mode):
+        apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_waterfalls_and_profiles(data, start_phase, end_phase, fraction)
-    fig = generate_plot1(data, start_phase, end_phase, fraction)
+    fig = generate_plot1(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
     
 @st.fragment
-def H2(data):
+def H2(data, theme_mode):
     st.header("Individual Pulse Profile For A Selected Pulse Index")
     mindex = data.shape[0] - 1
     col1, col2, col3 = st.columns(3)
@@ -109,14 +97,14 @@ def H2(data):
     with col3:
         pulse_index = st.number_input("Pulse Index", min_value=0, max_value=mindex, value=0, step=1)
     @st.cache_data
-    def generate_plot2(data, start_phase, end_phase, pulse_index):
-        apply_streamlit_theme_to_matplotlib()
+    def generate_plot2(data, start_phase, end_phase, pulse_index, theme_mode):
+        apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_single_pulse_stokes(data, start_phase, end_phase, pulse_index)
-    fig = generate_plot2(data, start_phase, end_phase, pulse_index)
+    fig = generate_plot2(data, start_phase, end_phase, pulse_index, theme_mode)
     st.pyplot(fig)
     
 @st.fragment
-def H3(data):
+def H3(data, theme_mode):
     st.header("Polarisation Parameters vs Phase")
     st.markdown("""
     Plot of key polarization parameters as a function of rotational phase. You can zoom in on a selected phase range.
@@ -127,14 +115,14 @@ def H3(data):
     with col2:
         end_phase = st.number_input("end phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     @st.cache_data
-    def generate_plot3(data, start_phase, end_phase, fraction):
-        apply_streamlit_theme_to_matplotlib()
+    def generate_plot3(data, start_phase, end_phase, fraction, theme_mode):
+        apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_polarisation_parameters(data, start_phase, end_phase, fraction)
-    fig = generate_plot3(data, start_phase, end_phase, fraction)
+    fig = generate_plot3(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
     
 @st.fragment
-def H4(data):
+def H4(data, theme_mode):
     st.header("2D Phase-Resolved Parameter Histograms (Log-Color)")
     st.markdown("""
     These heatmaps show how each parameter is distributed across both phase and multiple pulses, providing insight into the variability of polarization states.
@@ -145,14 +133,14 @@ def H4(data):
     with col2:
         end_phase = st.number_input("Final Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     @st.cache_data
-    def generate_plot4(data, start_phase, end_phase, fraction):
-        apply_streamlit_theme_to_matplotlib()
+    def generate_plot4(data, start_phase, end_phase, fraction, theme_mode):
+        apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_polarisation_histograms(data, start_phase, end_phase, fraction)
-    fig = generate_plot4(data, start_phase, end_phase, fraction)
+    fig = generate_plot4(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
     
 @st.fragment
-def H5(data):
+def H5(data, theme_mode):
     st.header("1D Parameter Histograms at Selected Phases")
     st.markdown("""
     Explore how polarization parameters are distributed at individual phase slices across all pulses.
@@ -165,14 +153,14 @@ def H5(data):
     with col3:
         right_phase = st.number_input("right phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     @st.cache_data
-    def generate_plot5(data, left_phase, mid_phase, right_phase, fraction):
-        apply_streamlit_theme_to_matplotlib()
+    def generate_plot5(data, left_phase, mid_phase, right_phase, fraction, theme_mode):
+        apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_phase_slice_histograms_by_phase(data, left_phase, mid_phase, right_phase, fraction)
-    fig = generate_plot5(data, left_phase, mid_phase, right_phase, fraction)
+    fig = generate_plot5(data, left_phase, mid_phase, right_phase, fraction, theme_mode)
     st.pyplot(fig)
     
 @st.fragment
-def H6(data):
+def H6(data, theme_mode):
     st.header("Polarization State on the Poincaré Sphere")
     st.subheader("""
     Hammer-Aitoff Projection of the Poincaré Sphere
@@ -183,14 +171,14 @@ def H6(data):
     with col2:
         end_phase = st.number_input("end_phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     @st.cache_data
-    def generate_plot6(data, start_phase, end_phase, fraction):
-        apply_streamlit_theme_to_matplotlib()
+    def generate_plot6(data, start_phase, end_phase, fraction, theme_mode):
+        apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_poincare_aitoff_from_data(data, start_phase, end_phase, fraction)
-    fig = generate_plot6(data, start_phase, end_phase, fraction)
+    fig = generate_plot6(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
     
 @st.fragment
-def H7(data):
+def H7(data, theme_mode):
     st.subheader("""
     Interactive 3D visualisation of the Poincaré Sphere
     """)
@@ -200,14 +188,14 @@ def H7(data):
     with col2:
         end_phase = st.number_input("ending phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     @st.cache_data
-    def generate_plot7(data, start_phase, end_phase, fraction):
-        apply_streamlit_theme_to_matplotlib()
+    def generate_plot7(data, start_phase, end_phase, fraction, theme_mode):
+        apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_interactive_poincare_sphere(data, start_phase, end_phase, fraction)
-    fig = generate_plot7(data, start_phase, end_phase, fraction)
+    fig = generate_plot7(data, start_phase, end_phase, fraction, theme_mode)
     st.plotly_chart(fig, use_container_width=True)
 
 @st.fragment
-def H8(data):
+def H8(data, theme_mode):
     st.subheader("""
     Radius of curvature (via circle fitting) of the polarization trajectory on the Poincaré sphere as a function of pulse phase
     """)
@@ -217,35 +205,94 @@ def H8(data):
     with col2:
         end_phase = st.number_input("Last Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     @st.cache_data
-    def generate_plot8(data, start_phase, end_phase, fraction):
-        apply_streamlit_theme_to_matplotlib()
+    def generate_plot8(data, start_phase, end_phase, fraction, theme_mode):
+        apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_radius_of_curvature_from_data(data, start_phase, end_phase, fraction)
-    fig = generate_plot8(data, start_phase, end_phase, fraction)
+    fig = generate_plot8(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
 
-# --- Load and check data ---
+# --- File Upload ---
+st.header("Upload Data")
+data = None
+obs_id = None
+
+# --- Init session state ---
+if "data" not in st.session_state:
+    st.session_state.data = None
+    st.session_state.obs_id = None
+
+def extract_obs_id(url: str) -> str:
+    match = re.search(r"singlepulse/([^/]+/[^/]+)/", url)
+    if match:
+        return match.group(1).replace("/", "_")
+    return "Unknown"
+
+uploaded_file = st.file_uploader("Upload a `.npz` or `.npy` file", type=["npz", "npy"])
 if uploaded_file is not None:
     try:
-        data = load_data(uploaded_file)
-        st.success(f"Data loaded: shape = {data.shape}")
+        if uploaded_file.name.endswith(".npz"):
+            with np.load(uploaded_file) as npzfile:
+                key = list(npzfile.keys())[0]
+                st.session_state.data = npzfile[key]
+        elif uploaded_file.name.endswith(".npy"):
+            st.session_state.data = np.load(uploaded_file)
+        st.session_state.obs_id = uploaded_file.name
+        st.success(f"File uploaded successfully: {uploaded_file.name}")
     except Exception as e:
-        st.error(f"Failed to load file: {e}")
+        st.error(f"Failed to load uploaded file: {e}")
         st.stop()
 
+st.header("Or download from a URL")
+url = st.text_input("Paste the full .npz file URL here:")
+with st.expander("Authentication"):
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+if st.button("Load from URL"):
+    if not url or not username or not password:
+        st.warning("Please fill in the URL and credentials.")
+    else:
+        try:
+            st.info("Downloading file...")
+            response = requests.get(url, auth=HTTPBasicAuth(username, password))
+            response.raise_for_status()
+
+            with io.BytesIO(response.content) as f:
+                with np.load(f) as npzfile:
+                    key = list(npzfile.keys())[0]
+                    st.session_state.data = npzfile[key]
+            st.session_state.obs_id = extract_obs_id(url)
+            st.success(f"File loaded successfully: {st.session_state.obs_id}")
+        except requests.exceptions.HTTPError as e:
+            st.error(f"HTTP Error: {e.response.status_code} – {e.response.reason}")
+            st.stop()
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
+            st.stop()
+
+data = st.session_state.data
+obs_id = st.session_state.obs_id
+default_start = 0.40
+default_mid   = 0.50
+default_end   = 0.60
+
+if data is not None:
     if len(data.shape) != 3 or data.shape[1] != 4:
         st.error("Invalid data shape. Expected shape: (num_pulses, 4, num_phase_bins)")
         st.stop()
-
-    fraction = st.number_input("Fraction of maximum to define off-pulse cut-off", min_value=0.0, max_value=1.0, value=0.05, step=0.01)
-    st.warning("The fraction of maximum of integrated profile should be chosen such that minimum number of spikes are observed in the fractional polarisation degree vs phase graph outside the on-pulse, without the fractional polarisation degree abruptly vanishing anywhere in the on-pulse.")
-    H1(data)
-    H2(data)
-    H3(data)
-    H4(data)
-    H5(data)
-    H6(data)
-    H7(data)
-    H8(data)
     
+    st.success(f"Data shape: {data.shape}")
+    
+    fraction = st.number_input("Fraction of maximum to define off-pulse cut-off", min_value=0.0, max_value=1.0, value=0.05, step=0.01)
+    st.warning("Reloading the page will clear your uploaded file. Be sure to download your results if needed.")
+    st.warning("The fraction of maximum of integrated profile should be chosen such that minimum number of spikes are observed in the fractional polarisation degree vs phase graph outside the on-pulse, without the fractional polarisation degree abruptly vanishing anywhere in the on-pulse.")
+    H1(data, theme_mode)
+    H2(data, theme_mode)
+    H3(data, theme_mode)
+    H4(data, theme_mode)
+    H5(data, theme_mode)
+    H6(data, theme_mode)
+    H7(data, theme_mode)
+    H8(data, theme_mode)
 else:
-    st.info("Please upload a valid `.npy` or `.npz` file to begin.")
+    st.info("Please upload a valid file OR provide a valid link with credentials.")
