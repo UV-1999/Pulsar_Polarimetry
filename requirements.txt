@@ -5,5 +5,3 @@ datetime
 plotly
 scipy
 requests
-io
-re
