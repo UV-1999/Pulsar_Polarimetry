@@ -14,21 +14,21 @@ def plot_single_pulse_stokes(data, start_phase, end_phase, pulse_index):
     POL_LABELS = ['I', 'Q', 'U', 'V']
     pulse_phase = np.linspace(0, 1, data.shape[2])
     max_index = data.shape[0] - 1
-    fig, axs = plt.subplots(1, 4, figsize=(20, 4), sharex=True)
+    
+    fig, axs = plt.subplots(1, 4, figsize=(20, 4), constrained_layout=True)
     for i, label in enumerate(POL_LABELS):
-        mean_profile = data[:, i, :].mean(axis=0)
+        profile = data[pulse_index, i, :]
         start_idx = np.searchsorted(pulse_phase, start_phase, side='left')
         end_idx = np.searchsorted(pulse_phase, end_phase, side='right')
-        visible_segment = mean_profile[start_idx:end_idx]
+        visible_segment = profile[start_idx:end_idx]
         y_min = visible_segment.min()
         y_max = visible_segment.max()
+        axs[i].set_ylim(y_min - 0.1 * abs(y_max - y_min), y_max + 0.1 * abs(y_max - y_min))  
         axs[i].set_xlim(start_phase, end_phase)
-        axs[i].set_ylim(y_min - 0.1 * abs(y_max - y_min), y_max + 0.1 * abs(y_max - y_min))        
         axs[i].plot(pulse_phase, data[pulse_index, i, :])
         axs[i].set_xlabel('Phase')
         axs[i].set_ylabel('Intensity')
         axs[i].grid(True)
-    plt.tight_layout()
     return fig
 
 def plot_waterfalls_and_profiles(data, start_phase, end_phase, fraction):
