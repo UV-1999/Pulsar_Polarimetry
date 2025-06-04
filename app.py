@@ -50,15 +50,8 @@ with st.expander("About this App", expanded=True):
     
     **Need help or have any suggestions?** Reach out to <a href="https://uv-1999.github.io/" target="_blank">Piyush Marmat</a>.
     """, unsafe_allow_html=True)
-
-theme_mode = st.radio("Theme", ["light", "dark"])
-
-def apply_streamlit_theme_to_matplotlib(theme):
-    plt.rcdefaults()    
-    if theme == "dark":
-        plt.style.use("dark_background")
-    else:
-        plt.style.use("default")
+    
+theme_mode = None
 
 def load_data(uploaded_file):
      if uploaded_file.name.endswith(".npz"):
@@ -71,8 +64,7 @@ def load_data(uploaded_file):
 
 @st.fragment
 def H1(data, theme_mode):
-    st.header("Waterfall and Integrated Profiles")
-    st.markdown("Visualize how each Stokes parameter evolves with pulse number and rotational phase. You can zoom in on a selected phase range.")
+    st.header("Waterfall and Integrated Stokes Parameters")
     col1, col2 = st.columns(2)
     with col1:
         start_phase = st.number_input("Start Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
@@ -80,14 +72,14 @@ def H1(data, theme_mode):
         end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     @st.cache_data
     def generate_plot1(data, start_phase, end_phase, fraction, theme_mode):
-        apply_streamlit_theme_to_matplotlib(theme_mode)
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_waterfalls_and_profiles(data, start_phase, end_phase, fraction)
     fig = generate_plot1(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
     
 @st.fragment
 def H2(data, theme_mode):
-    st.header("Individual Pulse Profile For A Selected Pulse Index")
+    st.header("Polarisation Parameters for an Individual Pulse Profile")
     mindex = data.shape[0] - 1
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -97,18 +89,15 @@ def H2(data, theme_mode):
     with col3:
         pulse_index = st.number_input("Pulse Index", min_value=0, max_value=mindex, value=0, step=1)
     @st.cache_data
-    def generate_plot2(data, start_phase, end_phase, pulse_index, theme_mode):
-        apply_streamlit_theme_to_matplotlib(theme_mode)
-        return plot_single_pulse_stokes(data, start_phase, end_phase, pulse_index)
-    fig = generate_plot2(data, start_phase, end_phase, pulse_index, theme_mode)
+    def generate_plot2(data, start_phase, end_phase, fraction, pulse_index, theme_mode):
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
+        return plot_single_pulse_stokes(data, start_phase, end_phase, fraction, pulse_index)
+    fig = generate_plot2(data, start_phase, end_phase, fraction, pulse_index, theme_mode)
     st.pyplot(fig)
     
 @st.fragment
 def H3(data, theme_mode):
-    st.header("Polarisation Parameters vs Phase")
-    st.markdown("""
-    Plot of key polarization parameters as a function of rotational phase. You can zoom in on a selected phase range.
-    """)
+    st.header("Polarisation Parameters for Integrated Profile")
     col1, col2 = st.columns(2)
     with col1:
         start_phase = st.number_input("start phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
@@ -116,7 +105,7 @@ def H3(data, theme_mode):
         end_phase = st.number_input("end phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     @st.cache_data
     def generate_plot3(data, start_phase, end_phase, fraction, theme_mode):
-        apply_streamlit_theme_to_matplotlib(theme_mode)
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_polarisation_parameters(data, start_phase, end_phase, fraction)
     fig = generate_plot3(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
@@ -124,9 +113,6 @@ def H3(data, theme_mode):
 @st.fragment
 def H4(data, theme_mode):
     st.header("2D Phase-Resolved Parameter Histograms (Log-Color)")
-    st.markdown("""
-    These heatmaps show how each parameter is distributed across both phase and multiple pulses, providing insight into the variability of polarization states.
-    """)
     col1, col2 = st.columns(2)
     with col1:
         start_phase = st.number_input("Initial Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
@@ -134,7 +120,7 @@ def H4(data, theme_mode):
         end_phase = st.number_input("Final Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     @st.cache_data
     def generate_plot4(data, start_phase, end_phase, fraction, theme_mode):
-        apply_streamlit_theme_to_matplotlib(theme_mode)
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_polarisation_histograms(data, start_phase, end_phase, fraction)
     fig = generate_plot4(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
@@ -142,9 +128,6 @@ def H4(data, theme_mode):
 @st.fragment
 def H5(data, theme_mode):
     st.header("1D Parameter Histograms at Selected Phases")
-    st.markdown("""
-    Explore how polarization parameters are distributed at individual phase slices across all pulses.
-    """)
     col1, col2, col3 = st.columns(3)
     with col1:
         left_phase = st.number_input("left phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
@@ -154,7 +137,7 @@ def H5(data, theme_mode):
         right_phase = st.number_input("right phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     @st.cache_data
     def generate_plot5(data, left_phase, mid_phase, right_phase, fraction, theme_mode):
-        apply_streamlit_theme_to_matplotlib(theme_mode)
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_phase_slice_histograms_by_phase(data, left_phase, mid_phase, right_phase, fraction)
     fig = generate_plot5(data, left_phase, mid_phase, right_phase, fraction, theme_mode)
     st.pyplot(fig)
@@ -172,7 +155,7 @@ def H6(data, theme_mode):
         end_phase = st.number_input("end_phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     @st.cache_data
     def generate_plot6(data, start_phase, end_phase, fraction, theme_mode):
-        apply_streamlit_theme_to_matplotlib(theme_mode)
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_poincare_aitoff_from_data(data, start_phase, end_phase, fraction)
     fig = generate_plot6(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
@@ -189,7 +172,7 @@ def H7(data, theme_mode):
         end_phase = st.number_input("ending phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     @st.cache_data
     def generate_plot7(data, start_phase, end_phase, fraction, theme_mode):
-        apply_streamlit_theme_to_matplotlib(theme_mode)
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_interactive_poincare_sphere(data, start_phase, end_phase, fraction)
     fig = generate_plot7(data, start_phase, end_phase, fraction, theme_mode)
     st.plotly_chart(fig, use_container_width=True)
@@ -206,7 +189,7 @@ def H8(data, theme_mode):
         end_phase = st.number_input("Last Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
     @st.cache_data
     def generate_plot8(data, start_phase, end_phase, fraction, theme_mode):
-        apply_streamlit_theme_to_matplotlib(theme_mode)
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
         return plot_radius_of_curvature_from_data(data, start_phase, end_phase, fraction)
     fig = generate_plot8(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
