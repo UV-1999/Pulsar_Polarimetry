@@ -39,6 +39,13 @@ def plot_waterfalls_and_profiles(data, start_phase, end_phase, fraction):
         horizontal_y = fraction*np.max(mean_profile)
         ax_profile.axhline(y=horizontal_y, color='red', linestyle='--', linewidth=1)
     return fig
+
+def get_top_pulse_indices(data, top_n):
+    stokes_I = data[:, 0, :]
+    pulse_energies = np.sum(stokes_I, axis=1)
+    top_n = min(top_n, len(pulse_energies))
+    top_indices = np.argsort(pulse_energies)[-top_n:][::-1]
+    return top_indices
     
 def plot_single_pulse_stokes(data, start_phase, end_phase, fraction, pulse_index):
     """
