@@ -80,6 +80,9 @@ def H1(data, theme_mode):
 @st.fragment
 def H2(data, theme_mode):
     st.header("Polarisation Parameters for an Individual Pulse Profile")
+    top_indices = get_top_pulse_indices(data, 10)
+    st.write(f"Top 10 pulses by energy:")
+    st.write(", ".join(str(i) for i in top_indices))
     mindex = data.shape[0] - 1
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -270,7 +273,7 @@ if data is not None:
     fraction = st.number_input("Fraction of maximum to define off-pulse cut-off", min_value=0.0, max_value=1.0, value=0.05, step=0.01)
     st.warning("Reloading the page will clear your uploaded file. Be sure to download your results if needed.")
     st.warning("The fraction of maximum of integrated profile should be chosen such that minimum number of spikes are observed in the fractional polarisation degree vs phase graph outside the on-pulse, without the fractional polarisation degree abruptly vanishing anywhere in the on-pulse.")
-    H1(data, theme_mode)
+    H1(data, theme_mode)    
     H2(data, theme_mode)
     H3(data, theme_mode)
     H4(data, theme_mode)
