@@ -62,20 +62,26 @@ def load_data(uploaded_file):
          data = np.load(uploaded_file)
      return data
 
+@st.cache_data
+def generate_plot1(data, start_phase, end_phase, fraction, theme_mode):
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
+    return plot_waterfalls_and_profiles(data, start_phase, end_phase, fraction)
+        
 @st.fragment
 def H1(data, theme_mode):
     st.header("Waterfall and Integrated Stokes Parameters")
     col1, col2 = st.columns(2)
     with col1:
-        start_phase = st.number_input("Start Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+        start_phase = st.number_input("Start Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.001, format="%.3f", key="h11")
     with col2:
-        end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
-    @st.cache_data
-    def generate_plot1(data, start_phase, end_phase, fraction, theme_mode):
-        #apply_streamlit_theme_to_matplotlib(theme_mode)
-        return plot_waterfalls_and_profiles(data, start_phase, end_phase, fraction)
+        end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.001, format="%.3f", key="h12")
     fig = generate_plot1(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
+   
+@st.cache_data
+def generate_plot2(data, start_phase, end_phase, fraction, pulse_index, theme_mode):
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
+    return plot_single_pulse_stokes(data, start_phase, end_phase, fraction, pulse_index)
     
 @st.fragment
 def H2(data, theme_mode):
@@ -86,64 +92,68 @@ def H2(data, theme_mode):
     mindex = data.shape[0] - 1
     col1, col2, col3 = st.columns(3)
     with col1:
-        start_phase = st.number_input("Starting Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+        start_phase = st.number_input("Start Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.001, format="%.3f", key="h21")
     with col2:
-        end_phase = st.number_input("Ending Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
+        end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.001, format="%.3f", key="h22")
     with col3:
         pulse_index = st.number_input("Pulse Index", min_value=0, max_value=mindex, value=0, step=1)
-    @st.cache_data
-    def generate_plot2(data, start_phase, end_phase, fraction, pulse_index, theme_mode):
-        #apply_streamlit_theme_to_matplotlib(theme_mode)
-        return plot_single_pulse_stokes(data, start_phase, end_phase, fraction, pulse_index)
     fig = generate_plot2(data, start_phase, end_phase, fraction, pulse_index, theme_mode)
     st.pyplot(fig)
+    
+@st.cache_data
+def generate_plot3(data, start_phase, end_phase, fraction, theme_mode):
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
+    return plot_polarisation_parameters(data, start_phase, end_phase, fraction)
     
 @st.fragment
 def H3(data, theme_mode):
     st.header("Polarisation Parameters for Integrated Profile")
     col1, col2 = st.columns(2)
     with col1:
-        start_phase = st.number_input("start phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+        start_phase = st.number_input("Start Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.001, format="%.3f", key="h31")
     with col2:
-        end_phase = st.number_input("end phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
-    @st.cache_data
-    def generate_plot3(data, start_phase, end_phase, fraction, theme_mode):
-        #apply_streamlit_theme_to_matplotlib(theme_mode)
-        return plot_polarisation_parameters(data, start_phase, end_phase, fraction)
+        end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.001, format="%.3f", key="h32")
     fig = generate_plot3(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
+    
+@st.cache_data
+def generate_plot4(data, start_phase, end_phase, fraction, theme_mode):
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
+    return plot_polarisation_histograms(data, start_phase, end_phase, fraction)    
     
 @st.fragment
 def H4(data, theme_mode):
     st.header("2D Phase-Resolved Parameter Histograms (Log-Color)")
     col1, col2 = st.columns(2)
     with col1:
-        start_phase = st.number_input("Initial Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+        start_phase = st.number_input("Start Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.001, format="%.3f", key="h41")
     with col2:
-        end_phase = st.number_input("Final Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
-    @st.cache_data
-    def generate_plot4(data, start_phase, end_phase, fraction, theme_mode):
-        #apply_streamlit_theme_to_matplotlib(theme_mode)
-        return plot_polarisation_histograms(data, start_phase, end_phase, fraction)
+        end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.001, format="%.3f", key="h42")
     fig = generate_plot4(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
+    
+@st.cache_data
+def generate_plot5(data, left_phase, mid_phase, right_phase, fraction, theme_mode):
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
+    return plot_phase_slice_histograms_by_phase(data, left_phase, mid_phase, right_phase, fraction)
     
 @st.fragment
 def H5(data, theme_mode):
     st.header("1D Parameter Histograms at Selected Phases")
     col1, col2, col3 = st.columns(3)
     with col1:
-        left_phase = st.number_input("left phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+        left_phase = st.number_input("Left Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.001, format="%.3f", key="h51")
     with col2:
-        mid_phase = st.number_input("mid phase", min_value=0.0, max_value=1.0, value=default_mid, step=0.01)
+        mid_phase = st.number_input("Mid Phase", min_value=0.0, max_value=1.0, value=default_mid, step=0.001, format="%.3f", key="h52")
     with col3:
-        right_phase = st.number_input("right phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
-    @st.cache_data
-    def generate_plot5(data, left_phase, mid_phase, right_phase, fraction, theme_mode):
-        #apply_streamlit_theme_to_matplotlib(theme_mode)
-        return plot_phase_slice_histograms_by_phase(data, left_phase, mid_phase, right_phase, fraction)
+        right_phase = st.number_input("Right Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.001, format="%.3f", key="h53")
     fig = generate_plot5(data, left_phase, mid_phase, right_phase, fraction, theme_mode)
     st.pyplot(fig)
+    
+@st.cache_data
+def generate_plot6(data, start_phase, end_phase, fraction, theme_mode):
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
+    return plot_poincare_aitoff_from_data(data, start_phase, end_phase, fraction)    
     
 @st.fragment
 def H6(data, theme_mode):
@@ -153,15 +163,16 @@ def H6(data, theme_mode):
     """)
     col1, col2 = st.columns(2)
     with col1:
-        start_phase = st.number_input("start_phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+        start_phase = st.number_input("Start Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.001, format="%.3f", key="h61")
     with col2:
-        end_phase = st.number_input("end_phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
-    @st.cache_data
-    def generate_plot6(data, start_phase, end_phase, fraction, theme_mode):
-        #apply_streamlit_theme_to_matplotlib(theme_mode)
-        return plot_poincare_aitoff_from_data(data, start_phase, end_phase, fraction)
+        end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.001, format="%.3f", key="h62")
     fig = generate_plot6(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
+    
+@st.cache_data
+def generate_plot7(data, start_phase, end_phase, fraction, theme_mode):
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
+    return plot_interactive_poincare_sphere(data, start_phase, end_phase, fraction)
     
 @st.fragment
 def H7(data, theme_mode):
@@ -170,15 +181,16 @@ def H7(data, theme_mode):
     """)
     col1, col2 = st.columns(2)
     with col1:
-        start_phase = st.number_input("starting phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+        start_phase = st.number_input("Start Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.001, format="%.3f", key="h71")
     with col2:
-        end_phase = st.number_input("ending phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
-    @st.cache_data
-    def generate_plot7(data, start_phase, end_phase, fraction, theme_mode):
-        #apply_streamlit_theme_to_matplotlib(theme_mode)
-        return plot_interactive_poincare_sphere(data, start_phase, end_phase, fraction)
+        end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.001, format="%.3f", key="h72")
     fig = generate_plot7(data, start_phase, end_phase, fraction, theme_mode)
     st.plotly_chart(fig, use_container_width=True)
+
+@st.cache_data
+def generate_plot8(data, start_phase, end_phase, fraction, theme_mode):
+        #apply_streamlit_theme_to_matplotlib(theme_mode)
+    return plot_radius_of_curvature_from_data(data, start_phase, end_phase, fraction)
 
 @st.fragment
 def H8(data, theme_mode):
@@ -187,13 +199,9 @@ def H8(data, theme_mode):
     """)
     col1, col2 = st.columns(2)
     with col1:
-        start_phase = st.number_input("First Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.01)
+        start_phase = st.number_input("Start Phase", min_value=0.0, max_value=1.0, value=default_start, step=0.001, format="%.3f", key="h81")
     with col2:
-        end_phase = st.number_input("Last Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.01)
-    @st.cache_data
-    def generate_plot8(data, start_phase, end_phase, fraction, theme_mode):
-        #apply_streamlit_theme_to_matplotlib(theme_mode)
-        return plot_radius_of_curvature_from_data(data, start_phase, end_phase, fraction)
+        end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.001, format="%.3f", key="h82")
     fig = generate_plot8(data, start_phase, end_phase, fraction, theme_mode)
     st.pyplot(fig)
 
@@ -270,10 +278,10 @@ if data is not None:
     
     st.success(f"Data shape: {data.shape}")
     
-    fraction = st.number_input("Fraction of maximum to define off-pulse cut-off", min_value=0.0, max_value=1.0, value=0.05, step=0.01)
+    fraction = st.number_input("Fraction of maximum to define off-pulse cut-off", min_value=0.0, max_value=1.0, value=0.05, step=0.001, format="%.3f")
     st.warning("Reloading the page will clear your uploaded file. Be sure to download your results if needed.")
     st.warning("The fraction of maximum of integrated profile should be chosen such that minimum number of spikes are observed in the fractional polarisation degree vs phase graph outside the on-pulse, without the fractional polarisation degree abruptly vanishing anywhere in the on-pulse.")
-    H1(data, theme_mode)    
+    H1(data, theme_mode)
     H2(data, theme_mode)
     H3(data, theme_mode)
     H4(data, theme_mode)
