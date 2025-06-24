@@ -19,7 +19,7 @@ A data-analysis tool by for visualizing and exploring single-pulse polarimetry d
 """, unsafe_allow_html=True)
 with st.expander("About this App", expanded=False):
     st.markdown(f"""
-    This tool lets you upload pulsar single-pulse data in `.npy` or `.npz` format (as available from the MeerTime database),
+    This tool lets you upload pulsar single-pulse data in .npy or .npz format (as available from the MeerTime database),
     and generates a series of interactive visualizations to explore the polarization state of the pulsar signal.
     
     **Features included as on {today}:**
