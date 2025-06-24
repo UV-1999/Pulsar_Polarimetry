@@ -3,8 +3,153 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import matplotlib.ticker as ticker
 from scipy.stats import iqr
+from scipy.optimize import curve_fit
 from matplotlib import gridspec
+from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MaxNLocator
+
+def plot_polarisation_parameters(data, start_phase, end_phase, fraction):
+    """
+    Plots (P/I, L/I, V/I), PA, and EA vs phase for the integrated pulse
+    """
+    num_pulses, _, num_phase_bins = data.shape
+    phase_axis = np.linspace(0, 1, num_phase_bins)
+
+    I = data[:, 0, :].mean(axis=0)
+    Q = data[:, 1, :].mean(axis=0)
+    U = data[:, 2, :].mean(axis=0)
+    V = data[:, 3, :].mean(axis=0)
+    
+    threshold = fraction * np.max(I)
+    on_pulse_mask = I >= threshold
+    off_pulse_mask = ~on_pulse_mask
+
+    off_pulse_std = np.std(I[off_pulse_mask])
+
+    L = np.sqrt(Q**2 + U**2)
+    L_true = np.zeros_like(L)
+    L_sigma = L / off_pulse_std
+    mask = L_sigma >= 1.57
+    L_true[mask] = off_pulse_std * np.sqrt(L_sigma[mask]**2 - 1)
+
+    P = np.sqrt(Q**2 + U**2 + V**2)
+    P_true = np.zeros_like(P)
+    P_sigma = P / off_pulse_std
+    mask = P_sigma >= 1.57
+    P_true[mask] = off_pulse_std * np.sqrt(P_sigma[mask]**2 - 1)
+
+    p_frac = np.where(I > threshold, P_true / I, 0)
+    l_frac = np.where(I > threshold, L_true / I, 0)
+    v_frac = np.where(I > threshold, V / I, 0)
+
+    PA = 0.5 * np.arctan2(U, Q) * 180 / np.pi
+    EA = 0.5 * np.arctan2(V, L_true) * 180 / np.pi
+
+    fig = plt.figure(figsize=(20, 8))
+    gs = GridSpec(2, 2, figure=fig)
+    ax1 = fig.add_subplot(gs[0, :]) 
+    ax2 = fig.add_subplot(gs[1, 0]) 
+    ax3 = fig.add_subplot(gs[1, 1])
+
+    ax1.plot(phase_axis, p_frac, label="P/I", color='tab:blue')
+    ax1.plot(phase_axis, l_frac, label="L/I", color='tab:orange')
+    ax1.plot(phase_axis, v_frac, label="V/I", color='tab:green')
+    ax1.set_ylabel("Normalized Stokes")
+    ax1.legend()
+    ax1.set_xlim(start_phase, end_phase)
+    ax1.grid(True)
+    ax1.set_xlabel("Pulse Phase")
+
+    ax2.plot(phase_axis, PA, color='tab:red')
+    ax2.set_ylabel("PA on pulse [deg]")
+    ax2.set_xlim(start_phase, end_phase)
+    ax2.grid(True)
+    ax2.set_xlabel("Pulse Phase")
+
+    ax3.plot(phase_axis, EA, color='tab:purple')
+    ax3.set_ylabel("EA [deg]")
+    ax3.set_xlim(start_phase, end_phase)
+    ax3.grid(True)
+    ax3.set_xlabel("Pulse Phase")
+
+    plt.tight_layout()
+    return fig
+
+def get_top_pulse_indices(data, top_n):
+    stokes_I = data[:, 0, :]
+    pulse_energies = np.sum(stokes_I, axis=1)
+    top_n = min(top_n, len(pulse_energies))
+    top_indices = np.argsort(pulse_energies)[-top_n:][::-1]
+    return top_indices
+    
+def plot_single_pulse_stokes(data, start_phase, end_phase, fraction, pulse_index):
+    """
+    Plots I, (P/I, L/I, V/I), PA, and EA vs phase for a single pulse
+    """
+    num_pulses, _, num_phase_bins = data.shape
+    phase_axis = np.linspace(0, 1, num_phase_bins)
+
+    I = data[pulse_index, 0, :]
+    Q = data[pulse_index, 1, :]
+    U = data[pulse_index, 2, :]
+    V = data[pulse_index, 3, :]
+
+    threshold = fraction * np.max(I)
+    on_pulse_mask = I >= threshold
+    off_pulse_mask = ~on_pulse_mask
+
+    off_pulse_std = np.std(I[off_pulse_mask])
+
+    L = np.sqrt(Q**2 + U**2)
+    L_true = np.zeros_like(L)
+    L_sigma = L / off_pulse_std
+    mask = L_sigma >= 1.57
+    L_true[mask] = off_pulse_std * np.sqrt(L_sigma[mask]**2 - 1)
+
+    P = np.sqrt(Q**2 + U**2 + V**2)
+    P_true = np.zeros_like(P)
+    P_sigma = P / off_pulse_std
+    mask = P_sigma >= 1.57
+    P_true[mask] = off_pulse_std * np.sqrt(P_sigma[mask]**2 - 1)
+
+    p_frac = np.where(I > threshold, P_true / I, 0)
+    l_frac = np.where(I > threshold, L_true / I, 0)
+    v_frac = np.where(I > threshold, V / I, 0)
+
+    PA = 0.5 * np.arctan2(U, Q) * 180 / np.pi
+    EA = 0.5 * np.arctan2(V, L_true) * 180 / np.pi
+
+    fig, axs = plt.subplots(2, 2, figsize=(10, 5))
+    axs = axs.flatten()
+    axs[0].plot(phase_axis, I, color='blue', lw=1.5)
+    axs[0].set_ylabel("I")
+    axs[0].set_xlim(start_phase, end_phase)
+    axs[0].grid(True)
+    axs[0].set_xlabel("Pulse Phase")
+
+    axs[1].plot(phase_axis, p_frac, label="P/I", color='tab:blue')
+    axs[1].plot(phase_axis, l_frac, label="L/I", color='tab:orange')
+    axs[1].plot(phase_axis, v_frac, label="V/I", color='tab:green')
+    axs[1].set_ylabel("Normalized Stokes")
+    axs[1].legend()
+    axs[1].set_xlim(start_phase, end_phase)
+    axs[1].grid(True)
+    axs[1].set_xlabel("Pulse Phase")
+
+    axs[2].plot(phase_axis, PA, color='tab:red')
+    axs[2].set_ylabel("PA [deg]")
+    axs[2].set_xlim(start_phase, end_phase)
+    axs[2].grid(True)
+    axs[2].set_xlabel("Pulse Phase")
+
+    axs[3].plot(phase_axis, EA, color='tab:purple')
+    axs[3].set_ylabel("EA [deg]")
+    axs[3].set_xlim(start_phase, end_phase)
+    axs[3].grid(True)
+    axs[3].set_xlabel("Pulse Phase")
+    
+    plt.tight_layout()
+    return fig
 
 def plot_waterfalls_and_profiles(data, start_phase, end_phase, fraction):
     POL_LABELS = ['I', 'Q', 'U', 'V']
@@ -40,170 +185,6 @@ def plot_waterfalls_and_profiles(data, start_phase, end_phase, fraction):
         ax_profile.axhline(y=horizontal_y, color='red', linestyle='--', linewidth=1)
     return fig
 
-def get_top_pulse_indices(data, top_n):
-    stokes_I = data[:, 0, :]
-    pulse_energies = np.sum(stokes_I, axis=1)
-    top_n = min(top_n, len(pulse_energies))
-    top_indices = np.argsort(pulse_energies)[-top_n:][::-1]
-    return top_indices
-    
-def plot_single_pulse_stokes(data, start_phase, end_phase, fraction, pulse_index):
-    """
-    Plots I, (P/I, L/I, V/I), PA, and EA vs phase for a single pulse
-    """
-    import numpy as np
-    import matplotlib.pyplot as plt
-
-    num_pulses, _, num_phase_bins = data.shape
-    phase_axis = np.linspace(0, 1, num_phase_bins)
-
-    # Extract Stokes parameters for a single pulse
-    I = data[pulse_index, 0, :]
-    Q = data[pulse_index, 1, :]
-    U = data[pulse_index, 2, :]
-    V = data[pulse_index, 3, :]
-    
-    # On-/off-pulse regions
-    threshold = fraction * np.max(I)
-    on_pulse_mask = I >= threshold
-    off_pulse_mask = ~on_pulse_mask
-
-    # Off-pulse noise estimate
-    off_pulse_std = np.std(I[off_pulse_mask])
-
-    # Linear and total polarisation (bias-corrected)
-    L = np.sqrt(Q**2 + U**2)
-    L_true = np.zeros_like(L)
-    L_sigma = L / off_pulse_std
-    mask = L_sigma >= 1.57
-    L_true[mask] = off_pulse_std * np.sqrt(L_sigma[mask]**2 - 1)
-
-    P = np.sqrt(Q**2 + U**2 + V**2)
-    P_true = np.zeros_like(P)
-    P_sigma = P / off_pulse_std
-    mask = P_sigma >= 1.57
-    P_true[mask] = off_pulse_std * np.sqrt(P_sigma[mask]**2 - 1)
-
-    # Normalized fractions
-    p_frac = np.where(I > threshold, P_true / I, 0)
-    l_frac = np.where(I > threshold, L_true / I, 0)
-    v_frac = np.where(I > threshold, V / I, 0)
-
-    # Polarisation and Ellipticity Angles
-    PA = 0.5 * np.arctan2(U, Q) * 180 / np.pi
-    EA = 0.5 * np.arctan2(V, L_true) * 180 / np.pi
-
-    # Plotting
-    fig, axs = plt.subplots(1, 4, figsize=(20, 4), sharex=True)
-
-    # 1. Intensity I
-    axs[0].plot(phase_axis, I, color='blue', lw=1.5)
-    axs[0].set_ylabel("I")
-    axs[0].set_xlim(start_phase, end_phase)
-    axs[0].grid(True)
-
-    # 2. P/I, L/I, V/I
-    axs[1].plot(phase_axis, p_frac, label="P/I", color='tab:blue')
-    axs[1].plot(phase_axis, l_frac, label="L/I", color='tab:orange')
-    axs[1].plot(phase_axis, v_frac, label="V/I", color='tab:green')
-    axs[1].set_ylabel("Normalized Stokes")
-    axs[1].legend()
-    axs[1].set_xlim(start_phase, end_phase)
-    axs[1].grid(True)
-
-    # 3. PA
-    axs[2].plot(phase_axis, PA, color='tab:red')
-    axs[2].set_ylabel("PA [deg]")
-    axs[2].set_xlim(start_phase, end_phase)
-    axs[2].grid(True)
-
-    # 4. EA
-    axs[3].plot(phase_axis, EA, color='tab:purple')
-    axs[3].set_ylabel("EA [deg]")
-    axs[3].set_xlim(start_phase, end_phase)
-    axs[3].grid(True)
-
-    # Shared x-label
-    for ax in axs:
-        ax.set_xlabel("Pulse Phase")
-
-    plt.tight_layout()
-    return fig
-
-def plot_polarisation_parameters(data, start_phase, end_phase, fraction):
-    """
-    Plots (P/I, L/I, V/I), PA, and EA vs phase for the integrated pulse
-    """
-    import numpy as np
-    import matplotlib.pyplot as plt
-
-    num_pulses, _, num_phase_bins = data.shape
-    phase_axis = np.linspace(0, 1, num_phase_bins)
-
-    # Extract Stokes parameters for a single pulse
-    I = data[:, 0, :].mean(axis=0)
-    Q = data[:, 1, :].mean(axis=0)
-    U = data[:, 2, :].mean(axis=0)
-    V = data[:, 3, :].mean(axis=0)
-    
-    # On-/off-pulse regions
-    threshold = fraction * np.max(I)
-    on_pulse_mask = I >= threshold
-    off_pulse_mask = ~on_pulse_mask
-
-    # Off-pulse noise estimate
-    off_pulse_std = np.std(I[off_pulse_mask])
-
-    # Linear and total polarisation (bias-corrected)
-    L = np.sqrt(Q**2 + U**2)
-    L_true = np.zeros_like(L)
-    L_sigma = L / off_pulse_std
-    mask = L_sigma >= 1.57
-    L_true[mask] = off_pulse_std * np.sqrt(L_sigma[mask]**2 - 1)
-
-    P = np.sqrt(Q**2 + U**2 + V**2)
-    P_true = np.zeros_like(P)
-    P_sigma = P / off_pulse_std
-    mask = P_sigma >= 1.57
-    P_true[mask] = off_pulse_std * np.sqrt(P_sigma[mask]**2 - 1)
-
-    # Normalized fractions
-    p_frac = np.where(I > threshold, P_true / I, 0)
-    l_frac = np.where(I > threshold, L_true / I, 0)
-    v_frac = np.where(I > threshold, V / I, 0)
-
-    # Polarisation and Ellipticity Angles
-    PA = 0.5 * np.arctan2(U, Q) * 180 / np.pi
-    EA = 0.5 * np.arctan2(V, L_true) * 180 / np.pi
-
-    # Plotting
-    fig, axs = plt.subplots(1, 3, figsize=(20, 4), sharex=True)
-
-    axs[0].plot(phase_axis, p_frac, label="P/I", color='tab:blue')
-    axs[0].plot(phase_axis, l_frac, label="L/I", color='tab:orange')
-    axs[0].plot(phase_axis, v_frac, label="V/I", color='tab:green')
-    axs[0].set_ylabel("Normalized Stokes")
-    axs[0].legend()
-    axs[0].set_xlim(start_phase, end_phase)
-    axs[0].grid(True)
-
-    axs[1].plot(phase_axis, PA, color='tab:red')
-    axs[1].set_ylabel("PA [deg]")
-    axs[1].set_xlim(start_phase, end_phase)
-    axs[1].grid(True)
-
-    axs[2].plot(phase_axis, EA, color='tab:purple')
-    axs[2].set_ylabel("EA [deg]")
-    axs[2].set_xlim(start_phase, end_phase)
-    axs[2].grid(True)
-
-    # Shared x-label
-    for ax in axs:
-        ax.set_xlabel("Pulse Phase")
-
-    plt.tight_layout()
-    return fig
-
 def plot_polarisation_histograms(data, start_phase, end_phase, fraction, base_quantity_bins=200):
     """
     Plots 2D histograms of PA, EA, I, P/I, L/I, V/I, and |V/I| vs phase over a user-defined phase range.
@@ -211,7 +192,6 @@ def plot_polarisation_histograms(data, start_phase, end_phase, fraction, base_qu
     num_pulses, _, num_phase_bins = data.shape
     phase_axis = np.linspace(0, 1, num_phase_bins)
 
-    # Extract Stokes parameters
     I = data[:, 0, :]
     Q = data[:, 1, :]
     U = data[:, 2, :]
@@ -223,7 +203,6 @@ def plot_polarisation_histograms(data, start_phase, end_phase, fraction, base_qu
     off_pulse_mask = ~on_pulse_mask
     off_pulse_std = np.std(I.mean(axis=0)[off_pulse_mask])
 
-    # Derived quantities and De-biasing
     L = np.sqrt(Q**2 + U**2)
     L_true = np.zeros_like(L)
     L_sigma = L / off_pulse_std
@@ -244,7 +223,6 @@ def plot_polarisation_histograms(data, start_phase, end_phase, fraction, base_qu
     quantities = [PA, EA, p_frac, l_frac, absv_frac, v_frac]
     labels = ["PA [deg]", "EA [deg]", "P/I", "L/I", "|V/I|", "V/I"]
 
-    # Determine selected phase range
     start_idx = np.searchsorted(phase_axis, start_phase)
     end_idx = np.searchsorted(phase_axis, end_phase)
     selected_phase_axis = phase_axis[start_idx:end_idx]
@@ -262,7 +240,7 @@ def plot_polarisation_histograms(data, start_phase, end_phase, fraction, base_qu
         hist2d = np.zeros((quantity_bins, selected_phase_bins))
         for i in range(selected_phase_bins):
             if label in ["P/I", "L/I", "|V/I|", "V/I"]:
-                nonzero_values = q[i][np.abs(q[i]) > threshold]  # Adjust threshold as needed
+                nonzero_values = q[i][np.abs(q[i]) > threshold]
                 if len(nonzero_values) > 0:
                     hist, bin_edges = np.histogram(nonzero_values, bins=quantity_bins, range=(q_min, q_max))
                 else:
@@ -282,7 +260,6 @@ def plot_polarisation_histograms(data, start_phase, end_phase, fraction, base_qu
         ax.set_ylabel(label, fontsize=10)
         ax.grid(False)
 
-        # Limit y-axis for subplots 2 through 5
         if ((idx > 1) and (idx < 5)):
             ax.set_ylim(threshold, 1)
         if idx == 5:
@@ -358,7 +335,6 @@ def plot_phase_slice_histograms_by_phase(data, left_phase, mid_phase, right_phas
             ax.set_xlabel("Value")
             ax.set_ylabel("Count")
             
-            # Limit y-axis for subplots 2 through 5
             if (row_idx < 3):
                 ax.set_xlim(0, 1)
             if row_idx == 3:
@@ -378,28 +354,23 @@ def plot_poincare_aitoff_from_data(data, start_phase, end_phase, fraction):
     U = data[:, 2, :].mean(axis=0)
     V = data[:, 3, :].mean(axis=0)
 
-    # Define on-pulse region
     threshold = fraction * np.max(I)
     on_pulse_mask = I >= threshold
     off_pulse_mask = ~on_pulse_mask
     sigma_off = np.std(I[off_pulse_mask])
 
-    # Compute derived quantities
     L = np.sqrt(Q**2 + U**2)
     L_true = np.zeros_like(L)
     L_sigma = L / sigma_off
     mask = L_sigma >= 1.57
     L_true[mask] = sigma_off * np.sqrt(L_sigma[mask]**2 - 1)
 
-    # Compute PA and EA (in radians)
     PA = 0.5 * np.arctan2(U, Q) 
     EA = 0.5 * np.arctan2(V, L_true)
 
-    # Convert phase ranges to bin indices
     start_idx = np.searchsorted(phase_axis, start_phase)
     end_idx = np.searchsorted(phase_axis, end_phase)
 
-    # Prepare lon, lat and colors
     lon = 2 * PA[start_idx:end_idx]
     lat = 2 * EA[start_idx:end_idx]
     lon = np.mod(lon + np.pi, 2 * np.pi) - np.pi  # Wrap to [-π, π]
@@ -451,7 +422,6 @@ def plot_interactive_poincare_sphere(data, start_phase, end_phase, fraction):
     y = np.cos(lat) * np.sin(lon)
     z = np.sin(lat)
 
-    # Filter segment
     start_idx = np.searchsorted(phase_axis, start_phase)
     end_idx = np.searchsorted(phase_axis, end_phase)
 
@@ -459,7 +429,6 @@ def plot_interactive_poincare_sphere(data, start_phase, end_phase, fraction):
     y = y[start_idx:end_idx]
     z = z[start_idx:end_idx]
 
-    # Create plot
     fig = go.Figure()
 
     fig.add_trace(go.Scatter3d(
@@ -470,7 +439,6 @@ def plot_interactive_poincare_sphere(data, start_phase, end_phase, fraction):
         name="Polarization Path"
     ))
 
-    # Optional: add faint reference sphere
     u, v = np.meshgrid(np.linspace(0, 2*np.pi, 50), np.linspace(0, np.pi, 50))
     xs = np.cos(u) * np.sin(v)
     ys = np.sin(u) * np.sin(v)
@@ -488,8 +456,6 @@ def plot_interactive_poincare_sphere(data, start_phase, end_phase, fraction):
         margin=dict(l=0, r=0, t=30, b=0)
     )
     return fig
-
-import numpy as np
 
 def find_radius(points):
     """
@@ -527,30 +493,25 @@ def plot_radius_of_curvature_from_data(data, start_phase, end_phase, fraction):
     off_pulse_mask = ~on_pulse_mask
     sigma_off = np.std(I[off_pulse_mask])
 
-    # Derived quantities
     L = np.sqrt(Q**2 + U**2)
     L_true = np.zeros_like(L)
     L_sigma = L / sigma_off
     mask = L_sigma >= 1.57
     L_true[mask] = sigma_off * np.sqrt(L_sigma[mask]**2 - 1)
 
-    # Compute PA and EA (in radians)
     PA = 0.5 * np.arctan2(U, Q)
     EA = 0.5 * np.arctan2(V, L_true)
 
-    # Convert to 3D points on the Poincaré sphere
     x = np.cos(2 * PA) * np.cos(2 * EA)
     y = np.sin(2 * PA) * np.cos(2 * EA)
     z = np.sin(2 * EA)
 
-    # Restrict to segment
     start_idx = np.searchsorted(phase_axis, start_phase)
     end_idx = np.searchsorted(phase_axis, end_phase)
 
     points = np.vstack((x[start_idx:end_idx], y[start_idx:end_idx], z[start_idx:end_idx])).T
     segment_phase = phase_axis[start_idx:end_idx]
 
-    # Compute curvature
     radii = []
     phase_centers = []
     for i in range(len(points) - 2):
@@ -559,7 +520,6 @@ def plot_radius_of_curvature_from_data(data, start_phase, end_phase, fraction):
         radii.append(radius)
         phase_centers.append(segment_phase[i + 1])  # phase at center of triplet
     
-    # Plot
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.plot(phase_centers, radii, linestyle='-', color='gray', alpha=0.5)
     sc = ax.scatter(phase_centers, radii, c=phase_centers, cmap='hsv', s=50)
