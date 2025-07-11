@@ -80,7 +80,7 @@ def H2(data):
     with col2:
         end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=default_end, step=0.001, format="%.3f", key="h22")
     with col3:
-        pulse_index = st.number_input("Pulse Index", min_value=0, max_value=mindex, value=0, step=1)
+        pulse_index = st.number_input("Pulse Index", min_value=0, max_value=mindex, value=top_indices[0], step=1)
     fig = generate_plot2(data, start_phase, end_phase, fraction, pulse_index)
     st.pyplot(fig)
     
@@ -235,35 +235,66 @@ if st.button("Load from URL"):
 
 data = st.session_state.data
 obs_id = st.session_state.obs_id
-default_start = 0.40
-default_mid   = 0.50
-default_end   = 0.60
 
 if data is not None:
     if len(data.shape) != 3 or data.shape[1] != 4:
         st.error("Invalid data shape. Expected shape: (num_pulses, 4, num_phase_bins)")
         st.stop()
     
-    st.success(f"Data shape: {data.shape}")
+    st.success(f"Data shape: {data.shape}, Metadata: {obs_id}")
     st.warning("Reloading the page will clear your uploaded file. Be sure to download your results if needed.")    
     st.warning("Visually identify the on-pulse region: ")
     fraction = st.number_input("Fraction of maximum to define off-pulse cut-off", min_value=0.0, max_value=1.0, value=0.05, step=0.001, format="%.3f")
-
+    
+    #########################################################################################
+    num_bins = data.shape[2]
+    I = data[:, 0, :].mean(axis=0)    
+    Q = data[:, 1, :].mean(axis=0)
+    U = data[:, 2, :].mean(axis=0)
+    threshold = fraction * np.max(I)
+    on_pulse_mask = I >= threshold
+    off_pulse_mask = ~on_pulse_mask
+    sigma_off = np.std(I[off_pulse_mask])
+    L = np.sqrt(Q**2 + U**2)
+    L_true = np.zeros_like(L)
+    L_sigma = L / sigma_off
+    mask = L_sigma >= 1.57
+    L_true[mask] = sigma_off * np.sqrt(L_sigma[mask]**2 - 1)
+    l_frac = np.where(I > threshold, L_true / I, 0)
+    mask = l_frac > 0
+    print("mask shape:", mask.shape)
+    edges = np.diff(mask.astype(int))
+    start_bins = np.where(edges == 1)[0] + 1
+    end_bins = np.where(edges == -1)[0] + 1
+    if mask[0]:
+        start_bins = np.insert(start_bins, 0, 0)
+    if mask[-1]:
+        end_bins = np.append(end_bins, len(mask))
+    if len(start_bins) > 0 and len(end_bins) > 0:
+        start_arg = start_bins[0]
+        end_arg = end_bins[0]
+    else:
+        start_arg = end_arg = None  # no on-pulse found
+    default_start = start_arg / num_bins
+    default_end = end_arg / num_bins
+    default_mid   = (default_start + default_end)/2.0
+    #########################################################################################
+    
     with st.expander("View/Hide - Waterfall and Integrated Stokes Parameters", expanded=True):
         H1(data)
-    with st.expander("View/Hide - Polarisation Parameters for Integrated Profile", expanded=False):
+    with st.expander("View/Hide - Polarisation Parameters for Integrated Profile", expanded=True):
         H3(data)
-    with st.expander("View/Hide - 2D Phase-Resolved Parameter Histograms (Log-Color)", expanded=False):
+    with st.expander("View/Hide - 2D Phase-Resolved Parameter Histograms (Log-Color)", expanded=True):
         H4(data)
-    with st.expander("View/Hide - Polarisation Parameters for an Individual Pulse Profile", expanded=False):
+    with st.expander("View/Hide - Polarisation Parameters for an Individual Pulse Profile", expanded=True):
         H2(data)
-    with st.expander("View/Hide - 1D Parameter Histograms at Selected Phases", expanded=False):
+    with st.expander("View/Hide - 1D Parameter Histograms at Selected Phases", expanded=True):
         H5(data)
-    with st.expander("View/Hide - Hammer-Aitoff Projection of the Poincaré Sphere", expanded=False):
+    with st.expander("View/Hide - Hammer-Aitoff Projection of the Poincaré Sphere", expanded=True):
         H6(data)
-    with st.expander("View/Hide - Interactive 3D visualisation of the Poincaré Sphere", expanded=False):
+    with st.expander("View/Hide - Interactive 3D visualisation of the Poincaré Sphere", expanded=True):
         H7(data)
-    with st.expander("View/Hide - Radius of curvature (via circle fitting) of the polarization trajectory on the Poincaré sphere as a function of pulse phase", expanded=False):
+    with st.expander("View/Hide - Radius of curvature (via circle fitting) of the polarization trajectory on the Poincaré sphere as a function of pulse phase", expanded=True):
         H8(data)
 else:
     st.info("Please upload a valid file OR provide a valid link with credentials.")
