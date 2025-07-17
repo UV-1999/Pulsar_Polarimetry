@@ -9,4 +9,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Streamlit app
-        run: curl -s https://pulsarpolarimetry.streamlit.app/ > /dev/null
+        run: curl -s -H "User-Agent:Mozilla/5.0" https://pulsarpolarimetry.streamlit.app/ > /dev/null
