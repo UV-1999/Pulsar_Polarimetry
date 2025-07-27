@@ -2,24 +2,43 @@ name: Keep Streamlit App Awake
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/5 * * * *'  # Every 5 minutes
 
 jobs:
   ping:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/setup-node@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: '20'
-      - run: npm install puppeteer
-      - run: |
-          node -e "
+
+      - name: Install Puppeteer
+        run: npm install puppeteer
+
+      - name: Ping Streamlit App
+        run: |
+          cat <<EOF > ping.js
           const puppeteer = require('puppeteer');
+
           (async () => {
-            const browser = await puppeteer.launch({ headless: 'new' });
-            const page = await browser.newPage();
-            await page.goto('https://pulsarpolarimetry.streamlit.app/', { waitUntil: 'networkidle2' });
-            await page.waitForTimeout(5000);
-            await browser.close();
+            try {
+              const browser = await puppeteer.launch({
+                headless: true,
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
+              });
+
+              const page = await browser.newPage();
+              await page.goto('https://pulsarpolarimetry.streamlit.app/', { waitUntil: 'networkidle2' });
+              await page.waitForTimeout(5000);
+              await browser.close();
+              console.log('Pinged Streamlit app successfully.');
+            } catch (err) {
+              console.error('Failed to ping:', err);
+              process.exit(1);
+            }
           })();
-          "
+          EOF
+
+          node ping.js
