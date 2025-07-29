@@ -238,13 +238,15 @@ def extract_obs_id(url: str, info: dict) -> str:
     
 DEFAULT_URL = "https://psrweb.jb.man.ac.uk/meertime/singlepulse/J0304+1932/2021-01-25-18:54:21/1284/plots/2021-01-25-18:54:21.npz"
 js_result = streamlit_js_eval(js_expressions="sessionStorage.getItem('last_url')", key="get_url")
+
 if js_result is None:
-    st.write("Loading...")
-    st.stop()
+    js_result = DEFAULT_URL
+
 initial_url = js_result or DEFAULT_URL
 url = st.text_input("Paste the full .npz file URL here and hit enter to cache it:", value=initial_url)
 if url and url != js_result:
     streamlit_js_eval(js_expressions=f"sessionStorage.setItem('last_url', `{url}`)", key="set_url")
+
 
 with st.expander("Authentication"):
     username = st.text_input("Username")
