@@ -5,3 +5,4 @@ datetime
 plotly
 scipy
 requests
+streamlit_js_eval
