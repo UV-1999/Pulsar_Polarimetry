@@ -6,6 +6,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 import io
 import re
+from streamlit_js_eval import streamlit_js_eval
 
 today = datetime.today().strftime("%B %d, %Y")
 from modules.plots import *
@@ -234,9 +235,17 @@ def extract_obs_id(url: str, info: dict) -> str:
         freq_str = f"{freq:.2f}"
         return f"Pulsar-{pulsar}_Date-{date}_Time-{time}_Obs_Freq-{freq_str}_MHz"
     return "Unknown"
+    
+DEFAULT_URL = "https://psrweb.jb.man.ac.uk/meertime/singlepulse/J0304+1932/2021-01-25-18:54:21/1284/plots/2021-01-25-18:54:21.npz"
+js_result = streamlit_js_eval(js_expressions="sessionStorage.getItem('last_url')", key="get_url")
+if js_result is None:
+    st.write("Loading...")
+    st.stop()
+initial_url = js_result or DEFAULT_URL
+url = st.text_input("Paste the full .npz file URL here and hit enter to cache it:", value=initial_url)
+if url and url != js_result:
+    streamlit_js_eval(js_expressions=f"sessionStorage.setItem('last_url', `{url}`)", key="set_url")
 
-default_url = "https://psrweb.jb.man.ac.uk/meertime/singlepulse/J0304+1932/2021-01-25-18:54:21/1284/plots/2021-01-25-18:54:21.npz"
-url = st.text_input("Paste the full .npz file URL here:", value=default_url)
 with st.expander("Authentication"):
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
