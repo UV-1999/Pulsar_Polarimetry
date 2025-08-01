@@ -193,7 +193,6 @@ def plot_polarisation_histograms(data, start_phase, end_phase, on_pulse, obs_id,
     
     I_mean = I.mean(axis=0)
     threshold = np.min(I_mean[on_pulse_mask])
-    
     L = np.sqrt(Q**2 + U**2)
     L_true = np.zeros_like(L)
     L_sigma = L / off_pulse_std
@@ -218,31 +217,36 @@ def plot_polarisation_histograms(data, start_phase, end_phase, on_pulse, obs_id,
     end_idx = np.searchsorted(phase_axis, end_phase)
     selected_phase_axis = phase_axis[start_idx:end_idx]
     selected_phase_bins = end_idx - start_idx
+    
+    lowfrac = threshold/np.max(I_mean)
 
     # Dynamically adjust quantity bins
     quantity_bins = max(50, min(base_quantity_bins, selected_phase_bins))
 
-    fig, axs = plt.subplots(3, 2, figsize=(12, 10))
+    fig, axs = plt.subplots(3, 2, figsize=(12, 10), constrained_layout=True)
     axs = axs.flatten()  # Flatten to 1D for easy iteration
-
+    
     for idx, (ax, quantity, label) in enumerate(zip(axs, quantities, labels)):
         q = quantity.T[start_idx:end_idx]  # Shape: (selected_phase_bins, pulses)
         q_min, q_max = np.min(q), np.max(q)
         hist2d = np.zeros((quantity_bins, selected_phase_bins))
         for i in range(selected_phase_bins):
             if label in ["P/I", "L/I", "|V/I|", "V/I"]:
-                nonzero_values = q[i][np.abs(q[i]) >= threshold]
+                nonzero_values = q[i][np.abs(q[i]) >= lowfrac]
                 if len(nonzero_values) > 0:
                     hist, bin_edges = np.histogram(nonzero_values, bins=quantity_bins, range=(q_min, q_max))
                 else:
                     hist = np.zeros(quantity_bins)
                     bin_edges = np.linspace(q_min, q_max, quantity_bins + 1)
+                    
             else:
                 hist, bin_edges = np.histogram(q[i], bins=quantity_bins, range=(q_min, q_max))
         
             hist2d[:, i] = hist
 
         bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+        bin_min = bin_edges[0]
+        bin_max = bin_edges[-1]
         extent = [selected_phase_axis[0], selected_phase_axis[-1], bin_centers[0], bin_centers[-1]]
         log_hist2d = np.zeros_like(hist2d, dtype=float)
         mask = hist2d >= 1
@@ -252,9 +256,13 @@ def plot_polarisation_histograms(data, start_phase, end_phase, on_pulse, obs_id,
         ax.grid(False)
 
         if ((idx > 1) and (idx < 5)):
-            ax.set_ylim(threshold, 1)
+            if bin_max > 1:
+                ax.set_ylim(lowfrac, 1)
+            else:
+                ax.set_ylim(lowfrac,)
         if idx == 5:
-            ax.set_ylim(-1, 1)
+            if bin_min < -1 or bin_max > 1:
+                ax.set_ylim(-1, 1)
             
     axs[-2].set_xlabel("Pulse Phase")
     axs[-1].set_xlabel("Pulse Phase")
