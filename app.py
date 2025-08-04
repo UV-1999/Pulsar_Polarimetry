@@ -16,7 +16,7 @@ st.set_page_config(page_title="Pulsar Polarimeter", layout="wide")
 st.title("Pulsar Polarimeter")
 st.markdown("""
 <h4>
-A data-analysis tool by for visualizing and exploring single-pulse polarimetry data from the  
+An open-source data-analysis tool for visualizing and exploring single-pulse polarimetry data from the  
 <a href="https://psrweb.jb.man.ac.uk/meertime/singlepulse/" target="_blank">MeerTime Single Pulse Database</a>.
 </h4>
 """, unsafe_allow_html=True)
