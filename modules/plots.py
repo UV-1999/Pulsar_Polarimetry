@@ -5,6 +5,54 @@ from scipy.stats import iqr
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MaxNLocator
 
+import numpy as np
+import matplotlib.pyplot as plt
+
+def plot_poincare_aitoff_at_phase(data, on_pulse, cphase, obs_id):
+    num_pulses, _, num_bins = data.shape
+    phase_axis = np.linspace(0, 1, num_bins)
+    cbin = (np.argmin(np.abs(phase_axis - cphase)))
+
+    lon_list, lat_list = [], []
+    pulse_indices = np.arange(num_pulses)
+
+    default_start, default_end = on_pulse
+    on_pulse_mask = (phase_axis >= default_start) & (phase_axis <= default_end)
+
+    for p_idx in range(num_pulses):
+        I = data[p_idx, 0, :]
+        Q = data[p_idx, 1, :]
+        U = data[p_idx, 2, :]
+        V = data[p_idx, 3, :]
+        off_pulse_mask = ~on_pulse_mask
+        off_pulse_std = np.std(I[off_pulse_mask])
+        L = np.sqrt(Q**2 + U**2)
+        L_true = np.zeros_like(L)
+        L_sigma = L / off_pulse_std
+        mask = L_sigma >= 1.57
+        L_true[mask] = off_pulse_std * np.sqrt(L_sigma[mask]**2 - 1)
+        PA = 0.5 * np.arctan2(U, Q)
+        EA = 0.5 * np.arctan2(V, L_true)
+        pa_val = PA[cbin]
+        ea_val = EA[cbin]
+        lon = 2 * pa_val
+        lat = 2 * ea_val
+        lon = np.mod(lon + np.pi, 2 * np.pi) - np.pi
+        lon_list.append(lon)
+        lat_list.append(lat)
+
+    lon_arr = np.array(lon_list)
+    lat_arr = np.array(lat_list)
+
+    fig = plt.figure(figsize=(10, 5))
+    ax = fig.add_subplot(111, projection='aitoff')
+    sc = ax.scatter(lon_arr, lat_arr, c=pulse_indices, cmap='viridis', s=40, alpha=0.8)
+    ax.grid(True)
+    cb = fig.colorbar(sc, ax=ax, orientation='horizontal', label='Pulse Number')
+    plt.suptitle(f"{obs_id} — Poincaré Sphere (Aitoff) at Phase {cphase:.3f}")
+    plt.tight_layout()
+    return fig
+
 def plot_polarisation_parameters(data, start_phase, end_phase, on_pulse, obs_id):
     num_pulses, _, num_phase_bins = data.shape
     phase_axis = np.linspace(0, 1, num_phase_bins)
