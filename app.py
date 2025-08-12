@@ -31,6 +31,7 @@ with st.expander("About this App", expanded=False):
     - Polarization parameter vs pulse phase intergrated over all pulses.
     - 2D Histograms of polarization parameters with 1D Histograms for specific phases.
     - Trajectories of polarization state on the Poincaré sphere (Aitoff projection and 3D) in specific phase region.
+    - Polarization states on the Poincaré sphere at a fixed phase for all pulses (change phases to see polarisation modes (O and X) as clusters).
     - Linear polarisation parameter is corrected for bias.
     - Radius of curvature (via circle fitting) of the polarization trajectory on the Poincaré sphere as a function of pulse phase.
     - For an uploaded Numpy file, the on pulse window is inferred from the noise floor which is a fraction (user-input) of maximum intensity of the integrated profile.
@@ -180,6 +181,20 @@ def H8(data):
         end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=def_end, step=0.001, format="%.3f", key="h82")
     fig = generate_plot8(data, start_phase, end_phase, on_pulse, obs_id)
     st.pyplot(fig)
+    
+@st.cache_data
+def generate_plot9(data, on_pulse, cphase, obs_id):
+    return plot_poincare_aitoff_at_phase(data, on_pulse, cphase, obs_id)
+@st.fragment
+def H9(data):
+    st.subheader("""
+    Plot Aitoff projection of polarization states on the Poincaré sphere at a fixed phase for all pulses.
+    """)
+    col = st.columns(1)[0]
+    with col:
+        cphase = st.number_input("Phase", min_value=0.0, max_value=1.0, value=0.5, step=0.001, format="%.3f", key="h91")
+    fig = generate_plot9(data, on_pulse, cphase, obs_id)
+    st.pyplot(fig)
 
 st.subheader("Upload Data (`.npz` or `.npy`) or download from the MeerTime database")
 data = None
@@ -312,5 +327,7 @@ if data is not None:
         H7(data)
     with st.expander("View/Hide - Radius of curvature (via circle fitting) of the polarization trajectory on the Poincaré sphere as a function of pulse phase", expanded=True):
         H8(data)
+    with st.expander("View/Hide - Plot Aitoff projection of polarization states on the Poincaré sphere at a fixed phase for all pulses", expanded=True):
+        H9(data)
 else:
     st.info("Please upload a valid file OR provide a valid link with credentials.")
