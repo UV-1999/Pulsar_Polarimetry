@@ -5,9 +5,6 @@ from scipy.stats import iqr
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MaxNLocator
 
-import numpy as np
-import matplotlib.pyplot as plt
-
 def plot_poincare_aitoff_at_phase(data, on_pulse, cphase, obs_id):
     num_pulses, _, num_bins = data.shape
     phase_axis = np.linspace(0, 1, num_bins)
