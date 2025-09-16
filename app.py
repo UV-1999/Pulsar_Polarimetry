@@ -29,9 +29,10 @@ with st.expander("About this App", expanded=False):
     - Waterfall plots and integrated profiles of each Stokes parameter.
     - Individual pulse profiles for selected pulse indices.
     - Polarization parameter vs pulse phase intergrated over all pulses.
+    - 2|EA| v/s P/I plot as described in <a href="https://doi.org/10.1093/mnras/stad2271" target="_blank">Oswald et al. (2023)</a>. This plots helps in applying the partial coherence model.
     - 2D Histograms of polarization parameters with 1D Histograms for specific phases.
     - Trajectories of polarization state on the Poincaré sphere (Aitoff projection and 3D) in specific phase region.
-    - Polarization states on the Poincaré sphere at a fixed phase for all pulses (change phases to see polarisation modes (O and X) as clusters).
+    - Polarization states on the Poincaré sphere at a fixed phase for all pulses (change phase (normalised pulse longitude) to see polarisation modes (O and X) as clusters)
     - Linear polarisation parameter is corrected for bias.
     - Radius of curvature (via circle fitting) of the polarization trajectory on the Poincaré sphere as a function of pulse phase.
     - For an uploaded Numpy file, the on pulse window is inferred from the noise floor which is a fraction (user-input) of maximum intensity of the integrated profile.
