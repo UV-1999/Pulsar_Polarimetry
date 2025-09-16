@@ -5,6 +5,9 @@ from scipy.stats import iqr
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MaxNLocator
 
+import numpy as np
+import matplotlib.pyplot as plt
+
 def plot_poincare_aitoff_at_phase(data, on_pulse, cphase, obs_id):
     num_pulses, _, num_bins = data.shape
     phase_axis = np.linspace(0, 1, num_bins)
@@ -86,10 +89,11 @@ def plot_polarisation_parameters(data, start_phase, end_phase, on_pulse, obs_id)
     EA = 0.5 * np.arctan2(V, L_true) * 180 / np.pi
 
     fig = plt.figure(figsize=(20, 8))
-    gs = GridSpec(2, 2, figure=fig)
-    ax1 = fig.add_subplot(gs[0, :]) 
+    gs = GridSpec(2, 3, figure=fig) 
+    ax1 = fig.add_subplot(gs[0, :2]) 
     ax2 = fig.add_subplot(gs[1, 0]) 
     ax3 = fig.add_subplot(gs[1, 1])
+    ax4 = fig.add_subplot(gs[:, 2]) 
 
     ax1.plot(phase_axis, p_frac, label="P/I", color='tab:blue')
     ax1.plot(phase_axis, l_frac, label="L/I", color='tab:orange')
@@ -111,7 +115,26 @@ def plot_polarisation_parameters(data, start_phase, end_phase, on_pulse, obs_id)
     ax3.set_xlim(start_phase, end_phase)
     ax3.grid(True)
     ax3.set_xlabel("Pulse Phase")
+    
+    phase_mask = (phase_axis >= start_phase) & (phase_axis <= end_phase)
+    p_frac_masked = p_frac[phase_mask]
+    EA_masked = EA[phase_mask]
+    x = p_frac_masked
+    y = 2 * np.abs(EA_masked)
+    ax4.plot(x, y, color='tab:brown', alpha=0.6)
 
+    for i in range(len(x) - 1):
+        ax4.annotate(
+            "",
+            xy=(x[i + 1], y[i + 1]),
+            xytext=(x[i], y[i]),
+            arrowprops=dict(arrowstyle="->", color="tab:brown", lw=1.2),
+        )
+
+    ax4.set_xlabel("P/I")
+    ax4.set_ylabel("2 × |EA| [deg]")
+    ax4.grid(True)
+    
     plt.suptitle(obs_id)
     plt.tight_layout()
     return fig
