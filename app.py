@@ -252,7 +252,7 @@ def extract_obs_id(url: str, info: dict) -> str:
         return f"Pulsar-{pulsar}_Date-{date}_Time-{time}_Obs_Freq-{freq_str}_MHz"
     return "Unknown"
     
-DEFAULT_URL = "https://psrweb.jb.man.ac.uk/meertime/singlepulse/J0304+1932/2021-01-25-18:54:21/1284/plots/2021-01-25-18:54:21.npz"
+DEFAULT_URL = "https://psrweb.jb.man.ac.uk/meertime/singlepulse/J0835-4510/2020-12-26-21:39:16/1284/plots/2020-12-26-21:39:16.npz"
 js_result = streamlit_js_eval(js_expressions="sessionStorage.getItem('last_url')", key="get_url")
 
 if js_result is None:
