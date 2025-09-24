@@ -90,7 +90,8 @@ def plot_polarisation_parameters(data, start_phase, end_phase, on_pulse, obs_id)
 
     fig = plt.figure(figsize=(20, 8))
     gs = GridSpec(2, 3, figure=fig) 
-    ax1 = fig.add_subplot(gs[0, :2]) 
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax5 = fig.add_subplot(gs[0, 1])  
     ax2 = fig.add_subplot(gs[1, 0]) 
     ax3 = fig.add_subplot(gs[1, 1])
     ax4 = fig.add_subplot(gs[:, 2]) 
@@ -103,12 +104,20 @@ def plot_polarisation_parameters(data, start_phase, end_phase, on_pulse, obs_id)
     ax1.set_xlim(start_phase, end_phase)
     ax1.grid(True)
     ax1.set_xlabel("Pulse Phase")
-
+    
     ax2.plot(phase_axis, PA, color='tab:red')
     ax2.set_ylabel("PA on pulse [deg]")
     ax2.set_xlim(start_phase, end_phase)
     ax2.grid(True)
     ax2.set_xlabel("Pulse Phase")
+
+    dPA_dphi = np.gradient(PA, phase_axis)
+    dPA_dphi = dPA_dphi / np.max(dPA_dphi)
+    ax5.plot(phase_axis[on_pulse_mask], dPA_dphi[on_pulse_mask], color='tab:blue')
+    ax5.set_ylabel("Normalised PA Derivative")
+    ax5.set_xlim(start_phase, end_phase)
+    ax5.grid(True)
+    ax5.set_xlabel("Pulse Phase")
 
     ax3.plot(phase_axis, EA, color='tab:purple')
     ax3.set_ylabel("EA [deg]")
@@ -178,7 +187,9 @@ def plot_single_pulse_stokes(data, start_phase, end_phase, on_pulse, pulse_index
 
     PA = 0.5 * np.arctan2(U, Q) * 180 / np.pi
     EA = 0.5 * np.arctan2(V, L_true) * 180 / np.pi
-
+    dPA_dphi = np.gradient(PA, phase_axis)
+    dPA_dphi = dPA_dphi / np.max(dPA_dphi)
+    
     fig, axs = plt.subplots(2, 2, figsize=(10, 5))
     axs = axs.flatten()
     axs[0].plot(phase_axis, I, color='blue', lw=1.5)
@@ -187,6 +198,7 @@ def plot_single_pulse_stokes(data, start_phase, end_phase, on_pulse, pulse_index
     axs[0].grid(True)
     axs[0].set_xlabel("Pulse Phase")
 
+    axs[1].plot(phase_axis, dPA_dphi, label="dPA", color='tab:red')
     axs[1].plot(phase_axis, p_frac, label="P/I", color='tab:blue')
     axs[1].plot(phase_axis, l_frac, label="L/I", color='tab:orange')
     axs[1].plot(phase_axis, v_frac, label="V/I", color='tab:green')
@@ -277,9 +289,10 @@ def plot_polarisation_histograms(data, start_phase, end_phase, on_pulse, obs_id,
     absv_frac = np.where(I >= threshold, np.abs(V / I), 0)
     PA = 0.5 * np.arctan2(U, Q) * 180 / np.pi
     EA = 0.5 * np.arctan2(V, L_true) * 180 / np.pi
-
-    quantities = [PA, EA, p_frac, l_frac, absv_frac, v_frac]
-    labels = ["PA [deg]", "EA [deg]", "P/I", "L/I", "|V/I|", "V/I"]
+    dPA_dphi = np.gradient(PA, phase_axis, axis=-1)
+    dPA_dphi = dPA_dphi / np.max(dPA_dphi)
+    quantities = [PA, EA, p_frac, l_frac, absv_frac, v_frac, I, dPA_dphi]
+    labels = ["PA [deg]", "EA [deg]", "P/I", "L/I", "|V/I|", "V/I", "I", "Normalised PA Derivative"]
 
     start_idx = np.searchsorted(phase_axis, start_phase)
     end_idx = np.searchsorted(phase_axis, end_phase)
@@ -291,7 +304,7 @@ def plot_polarisation_histograms(data, start_phase, end_phase, on_pulse, obs_id,
     # Dynamically adjust quantity bins
     quantity_bins = max(50, min(base_quantity_bins, selected_phase_bins))
 
-    fig, axs = plt.subplots(3, 2, figsize=(12, 10), constrained_layout=True)
+    fig, axs = plt.subplots(4, 2, figsize=(12, 10), constrained_layout=True)
     axs = axs.flatten()  # Flatten to 1D for easy iteration
     
     for idx, (ax, quantity, label) in enumerate(zip(axs, quantities, labels)):
