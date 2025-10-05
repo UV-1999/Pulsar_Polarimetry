@@ -74,7 +74,7 @@ def H1(data):
 @st.cache_data
 def generate_plot2(data, start_phase, end_phase, on_pulse, pulse_index, obs_id):
     return plot_single_pulse_stokes(data, start_phase, end_phase, on_pulse, pulse_index, obs_id)
-@st.fragment
+#@st.fragment
 def H2(data):
     st.header("Polarisation Parameters for Selected Subpulse")
     top_indices = get_top_pulse_indices(data, 10)
@@ -94,7 +94,7 @@ def H2(data):
 @st.cache_data
 def generate_plot3(data, start_phase, end_phase, on_pulse, obs_id):
     return plot_polarisation_parameters(data, start_phase, end_phase, on_pulse, obs_id)
-@st.fragment
+#@st.fragment
 def H3(data):
     st.header("Polarisation Parameters for Integrated Profile")
     col1, col2 = st.columns(2)
@@ -108,7 +108,7 @@ def H3(data):
 @st.cache_data
 def generate_plot4(data, start_phase, end_phase, on_pulse, obs_id):
     return plot_polarisation_histograms(data, start_phase, end_phase, on_pulse, obs_id)    
-@st.fragment
+#@st.fragment
 def H4(data):
     st.header("2D Phase-Resolved Parameter Histograms (Log-Color)")
     col1, col2 = st.columns(2)
@@ -122,7 +122,7 @@ def H4(data):
 @st.cache_data
 def generate_plot5(data, left_phase, mid_phase, right_phase, on_pulse, obs_id):
     return plot_phase_slice_histograms_by_phase(data, left_phase, mid_phase, right_phase, on_pulse, obs_id)
-@st.fragment
+#@st.fragment
 def H5(data):
     st.header("1D Parameter Histograms at Selected Phases")
     col1, col2, col3 = st.columns(3)
@@ -138,7 +138,7 @@ def H5(data):
 @st.cache_data
 def generate_plot6(data, start_phase, end_phase, on_pulse, obs_id):
     return plot_poincare_aitoff_from_data(data, start_phase, end_phase, on_pulse, obs_id)    
-@st.fragment
+#@st.fragment
 def H6(data):
     st.header("Polarization State on the Poincaré Sphere")
     st.subheader("""
@@ -171,7 +171,7 @@ def H7(data):
 @st.cache_data
 def generate_plot8(data, start_phase, end_phase, on_pulse, obs_id):
     return plot_radius_of_curvature_from_data(data, start_phase, end_phase, on_pulse, obs_id)
-@st.fragment
+#@st.fragment
 def H8(data):
     st.subheader("""
     Radius of curvature (via circle fitting) of the polarization trajectory on the Poincaré sphere as a function of pulse phase
@@ -187,7 +187,7 @@ def H8(data):
 @st.cache_data
 def generate_plot9(data, on_pulse, cphase, obs_id):
     return plot_poincare_aitoff_at_phase(data, on_pulse, cphase, obs_id)
-@st.fragment
+#@st.fragment
 def H9(data):
     st.subheader("""
     Poincaré sphere at a fixed phase for all pulses.
@@ -201,7 +201,7 @@ def H9(data):
 @st.cache_data
 def generate_plot10(data, start_phase, end_phase, on_pulse, obs_id):
     return plot_polarisation_stacks(data, start_phase, end_phase, on_pulse, obs_id)
-@st.fragment
+#@st.fragment
 def H10(data):
     st.header("""
     Polarisation Parameters Stacks for all Pulses
@@ -229,7 +229,7 @@ def H11(data):
     with col2:
         end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=def_end, step=0.001, format="%.3f", key="h112")
     with col3:
-        pulse_index = st.number_input("Pulse Index", min_value=0, max_value=mindex, value=0, step=1)
+        pulse_index = st.number_input("Pulse Index", min_value=0, max_value=mindex, value=0, step=1, key="h113")
     fig = generate_plot11(data, start_phase, end_phase, on_pulse, obs_id, pulse_index)
     st.plotly_chart(fig, use_container_width=True)
 
