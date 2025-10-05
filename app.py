@@ -29,9 +29,10 @@ with st.expander("About this App", expanded=False):
     - Waterfall plots and integrated profiles of each Stokes parameter.
     - Individual pulse profiles for selected pulse indices.
     - Polarization parameter vs pulse phase intergrated over all pulses.
+    - Pulse stacks of polarization parameters. 
     - 2|EA| v/s P/I plot as described in <a href="https://doi.org/10.1093/mnras/stad2271" target="_blank">Oswald et al. (2023)</a>. This plots helps in applying the partial coherence model.
     - 2D Histograms of polarization parameters with 1D Histograms for specific phases.
-    - Trajectories of polarization state on the Poincaré sphere (Aitoff projection and 3D) in specific phase region.
+    - Trajectories of polarization state on the Poincaré sphere (Aitoff projection and 3D) in specific phase region for integrated as well as individual subpulses.
     - Polarization states on the Poincaré sphere at a fixed phase for all pulses (change phase (normalised pulse longitude) to see polarisation modes (O and X) as clusters)
     - Linear polarisation parameter is corrected for bias.
     - Radius of curvature (via circle fitting) of the polarization trajectory on the Poincaré sphere as a function of pulse phase.
@@ -75,7 +76,7 @@ def generate_plot2(data, start_phase, end_phase, on_pulse, pulse_index, obs_id):
     return plot_single_pulse_stokes(data, start_phase, end_phase, on_pulse, pulse_index, obs_id)
 @st.fragment
 def H2(data):
-    st.header("Polarisation Parameters for an Individual Pulse Profile")
+    st.header("Polarisation Parameters for Selected Subpulse")
     top_indices = get_top_pulse_indices(data, 10)
     st.write(f"Top 10 pulses by energy:")
     st.write(", ".join(str(i) for i in top_indices))
@@ -189,13 +190,48 @@ def generate_plot9(data, on_pulse, cphase, obs_id):
 @st.fragment
 def H9(data):
     st.subheader("""
-    Plot Aitoff projection of polarization states on the Poincaré sphere at a fixed phase for all pulses.
+    Poincaré sphere at a fixed phase for all pulses.
     """)
     col = st.columns(1)[0]
     with col:
         cphase = st.number_input("Phase", min_value=0.0, max_value=1.0, value=0.5, step=0.001, format="%.3f", key="h91")
     fig = generate_plot9(data, on_pulse, cphase, obs_id)
     st.pyplot(fig)
+    
+@st.cache_data
+def generate_plot10(data, start_phase, end_phase, on_pulse, obs_id):
+    return plot_polarisation_stacks(data, start_phase, end_phase, on_pulse, obs_id)
+@st.fragment
+def H10(data):
+    st.header("""
+    Polarisation Parameters Stacks for all Pulses
+    """)
+    col1, col2 = st.columns(2)
+    with col1:
+        start_phase = st.number_input("Start Phase", min_value=0.0, max_value=1.0, value=def_start, step=0.001, format="%.3f", key="h101")
+    with col2:
+        end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=def_end, step=0.001, format="%.3f", key="h102")
+    fig = generate_plot10(data, start_phase, end_phase, on_pulse, obs_id)
+    st.pyplot(fig)
+
+@st.cache_data
+def generate_plot11(data, start_phase, end_phase, on_pulse, obs_id, pulse_index):
+    return plot_interactive_poincare_sphere_subpulse(data, start_phase, end_phase, on_pulse, obs_id, pulse_index)
+@st.fragment
+def H11(data):
+    st.subheader("""
+    Poincaré Sphere for Selected Subpulse
+    """)
+    mindex = data.shape[0]-1
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        start_phase = st.number_input("Start Phase", min_value=0.0, max_value=1.0, value=def_start, step=0.001, format="%.3f", key="h111")
+    with col2:
+        end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=def_end, step=0.001, format="%.3f", key="h112")
+    with col3:
+        pulse_index = st.number_input("Pulse Index", min_value=0, max_value=mindex, value=0, step=1)
+    fig = generate_plot11(data, start_phase, end_phase, on_pulse, obs_id, pulse_index)
+    st.plotly_chart(fig, use_container_width=True)
 
 st.subheader("Upload Data (`.npz` or `.npy`) or download from the MeerTime database")
 data = None
@@ -312,23 +348,29 @@ if data is not None:
     st.success(f"Data shape: {data.shape}")
     st.warning("The app can sleep if left inactive for long time and requires reloading. Reloading will clear the data and plots. Be sure to download your results if needed.")    
     def_mid   = (def_start + def_end)/2.0
+    st.header("Integrated Profile Analysis")
     with st.expander("View/Hide - Waterfall and Integrated Stokes Parameters", expanded=True):
         H1(data)
     with st.expander("View/Hide - Polarisation Parameters for Integrated Profile", expanded=True):
         H3(data)
-    with st.expander("View/Hide - 2D Phase-Resolved Parameter Histograms (Log-Color)", expanded=True):
-        H4(data)
-    with st.expander("View/Hide - Polarisation Parameters for an Individual Pulse Profile", expanded=True):
-        H2(data)
-    with st.expander("View/Hide - 1D Parameter Histograms at Selected Phases", expanded=True):
-        H5(data)
     with st.expander("View/Hide - Hammer-Aitoff Projection of the Poincaré Sphere", expanded=True):
         H6(data)
     with st.expander("View/Hide - Interactive 3D visualisation of the Poincaré Sphere", expanded=True):
         H7(data)
     with st.expander("View/Hide - Radius of curvature (via circle fitting) of the polarization trajectory on the Poincaré sphere as a function of pulse phase", expanded=True):
         H8(data)
-    with st.expander("View/Hide - Plot Aitoff projection of polarization states on the Poincaré sphere at a fixed phase for all pulses", expanded=True):
+    st.header("Subpulse Profile Analysis")
+    with st.expander("View/Hide - Polarisation Parameters Stacks for all Pulses", expanded=True):
+        H10(data)
+    with st.expander("View/Hide - Poincaré Sphere for Selected Subpulse", expanded=True):
+        H11(data)
+    with st.expander("View/Hide - 2D Phase-Resolved Parameter Histograms (Log-Color)", expanded=True):
+        H4(data)   
+    with st.expander("View/Hide - Polarisation Parameters for Selected Subpulse", expanded=True):
+        H2(data)
+    with st.expander("View/Hide - 1D Parameter Histograms at Selected Phases", expanded=True):
+        H5(data)
+    with st.expander("View/Hide - Poincaré sphere at a fixed phase for all pulses", expanded=True):
         H9(data)
 else:
     st.info("Please upload a valid file OR provide a valid link with credentials.")
