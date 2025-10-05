@@ -6,3 +6,4 @@ plotly
 scipy
 requests
 streamlit_js_eval
+colorsys
