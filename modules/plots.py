@@ -5,8 +5,112 @@ from scipy.stats import iqr
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MaxNLocator
 
-import numpy as np
-import matplotlib.pyplot as plt
+def plot_waterfalls_and_profiles(data, start_phase, end_phase, obs_id):
+    POL_LABELS = ['I', 'Q', 'U', 'V']
+    fig, axs = plt.subplots(2, 4, figsize=(20, 10), constrained_layout=True)
+    pulse_phase = np.linspace(0, 1, data.shape[2])
+
+    for i, label in enumerate(POL_LABELS):
+        ax_waterfall = axs[0, i]
+        ax_profile = axs[1, i]
+        
+        start_idx = np.searchsorted(pulse_phase, start_phase, side='left')
+        end_idx = np.searchsorted(pulse_phase, end_phase, side='right')
+        segment_data = data[:, i, start_idx:end_idx]
+        vmin = segment_data.min()
+        vmax = segment_data.max()
+
+        img = ax_waterfall.imshow(data[:, i, :], aspect='auto', origin='lower',
+                                  extent=[0, 1, 0, data.shape[0]], cmap='magma', vmin=vmin, vmax=vmax)
+        ax_waterfall.set_title(f'{label} vs Pulse Number and Phase')
+        ax_waterfall.set_xlabel('Phase')
+        ax_waterfall.set_ylabel('Pulse Number')
+        ax_waterfall.set_xlim(start_phase, end_phase)
+        mean_profile = data[:, i, :].mean(axis=0)
+
+        visible_segment = mean_profile[start_idx:end_idx]
+        
+        y_min = visible_segment.min()
+        y_max = visible_segment.max()
+        ax_profile.set_ylim(y_min - 0.1 * abs(y_max - y_min), y_max + 0.1 * abs(y_max - y_min))        
+        
+        ax_profile.set_xlim(start_phase, end_phase)
+        ax_profile.plot(pulse_phase, mean_profile)
+        ax_profile.set_title(f'Mean {label} Profile')
+        ax_profile.set_xlabel('Phase')
+        ax_profile.set_ylabel('Intensity')
+    plt.suptitle(obs_id)
+    return fig
+    
+def plot_polarisation_stacks(data, start_phase, end_phase, on_pulse, obs_id):
+    num_pulses, _, num_phase_bins = data.shape
+    phase_axis = np.linspace(0, 1, num_phase_bins)
+
+    I = data[:, 0, :]
+    Q = data[:, 1, :]
+    U = data[:, 2, :]
+    V = data[:, 3, :]
+
+    default_start, default_end = on_pulse
+    on_pulse_mask = (phase_axis >= default_start) & (phase_axis <= default_end)
+    off_pulse_mask = ~on_pulse_mask
+    off_pulse_std = np.std(I.mean(axis=0)[off_pulse_mask])
+    
+    I_mean = I.mean(axis=0)
+    threshold = np.min(I_mean[on_pulse_mask])
+    L = np.sqrt(Q**2 + U**2)
+    L_true = np.zeros_like(L)
+    L_sigma = L / off_pulse_std
+    mask = L_sigma >= 1.57
+    L_true[mask] = off_pulse_std * np.sqrt(L_sigma[mask]**2 - 1)
+    P = np.sqrt(Q**2 + U**2 + V**2)
+    P_sigma = P / off_pulse_std
+    P_true = np.zeros_like(P)
+    mask = P_sigma >= 1.57
+    P_true[mask] = off_pulse_std * np.sqrt(P_sigma[mask]**2 - 1)
+    p_frac = np.where(I >= threshold, P_true/I , 0)
+    l_frac = np.where(I >= threshold, L_true / I, 0)
+    v_frac = np.where(I >= threshold, V / I, 0)
+    absv_frac = np.where(I >= threshold, np.abs(V / I), 0)
+    PA = 0.5 * np.arctan2(U, Q) * 180 / np.pi
+    EA = 0.5 * np.arctan2(V, L_true) * 180 / np.pi
+    quantities = [PA, EA, p_frac, l_frac, absv_frac, v_frac]
+    labels = ["PA [deg]", "EA [deg]", "P/I", "L/I", "|V/I|", "V/I"]
+
+    start_idx = np.searchsorted(phase_axis, start_phase)
+    end_idx = np.searchsorted(phase_axis, end_phase)
+    selected_phase_axis = phase_axis[start_idx:end_idx]
+    selected_phase_bins = end_idx - start_idx
+    
+    fig, axs = plt.subplots(3, 2, figsize=(12, 10), constrained_layout=True)
+    axs = axs.flatten()
+
+    for idx, (ax, quantity, label) in enumerate(zip(axs, quantities, labels)):
+        q = quantity[:, start_idx:end_idx] 
+        q_min, q_max = np.nanmin(q), np.nanmax(q)
+        if idx in [0, 1, 5]:
+            cmap = "bwr"
+        else:
+            cmap = "magma" 
+            
+        im = ax.imshow(
+            q,
+            aspect='auto',
+            extent=[selected_phase_axis[0], selected_phase_axis[-1], 0, num_pulses],
+            origin='lower',
+            cmap=cmap,
+            vmin=q_min,
+            vmax=q_max,
+        )
+        ax.set_ylabel("Pulse number", fontsize=10)
+        ax.set_title(label, fontsize=10)
+        ax.set_xlabel("Pulse Phase")
+
+        cbar = fig.colorbar(im, ax=ax, orientation='vertical')
+        cbar.set_label(label, fontsize=8)
+
+    plt.suptitle(obs_id)
+    return fig
 
 def plot_poincare_aitoff_at_phase(data, on_pulse, cphase, obs_id):
     num_pulses, _, num_bins = data.shape
@@ -224,39 +328,6 @@ def plot_single_pulse_stokes(data, start_phase, end_phase, on_pulse, pulse_index
     plt.tight_layout()
     return fig
 
-def plot_waterfalls_and_profiles(data, start_phase, end_phase, obs_id):
-    POL_LABELS = ['I', 'Q', 'U', 'V']
-    fig, axs = plt.subplots(2, 4, figsize=(20, 10), constrained_layout=True)
-    pulse_phase = np.linspace(0, 1, data.shape[2])
-
-    for i, label in enumerate(POL_LABELS):
-        ax_waterfall = axs[0, i]
-        ax_profile = axs[1, i]
-
-        img = ax_waterfall.imshow(data[:, i, :], aspect='auto', origin='lower',
-                                  extent=[0, 1, 0, data.shape[0]], cmap='magma')
-        ax_waterfall.set_title(f'{label} vs Pulse Number and Phase')
-        ax_waterfall.set_xlabel('Phase')
-        ax_waterfall.set_ylabel('Pulse Number')
-        ax_waterfall.set_xlim(start_phase, end_phase)
-        mean_profile = data[:, i, :].mean(axis=0)
-
-        start_idx = np.searchsorted(pulse_phase, start_phase, side='left')
-        end_idx = np.searchsorted(pulse_phase, end_phase, side='right')
-        visible_segment = mean_profile[start_idx:end_idx]
-        
-        y_min = visible_segment.min()
-        y_max = visible_segment.max()
-        ax_profile.set_ylim(y_min - 0.1 * abs(y_max - y_min), y_max + 0.1 * abs(y_max - y_min))        
-        
-        ax_profile.set_xlim(start_phase, end_phase)
-        ax_profile.plot(pulse_phase, mean_profile)
-        ax_profile.set_title(f'Mean {label} Profile')
-        ax_profile.set_xlabel('Phase')
-        ax_profile.set_ylabel('Intensity')
-    plt.suptitle(obs_id)
-    return fig
-
 def plot_polarisation_histograms(data, start_phase, end_phase, on_pulse, obs_id, base_quantity_bins=200):
     num_pulses, _, num_phase_bins = data.shape
     phase_axis = np.linspace(0, 1, num_phase_bins)
@@ -305,7 +376,7 @@ def plot_polarisation_histograms(data, start_phase, end_phase, on_pulse, obs_id,
     quantity_bins = max(50, min(base_quantity_bins, selected_phase_bins))
 
     fig, axs = plt.subplots(4, 2, figsize=(12, 10), constrained_layout=True)
-    axs = axs.flatten()  # Flatten to 1D for easy iteration
+    axs = axs.flatten()
     
     for idx, (ax, quantity, label) in enumerate(zip(axs, quantities, labels)):
         q = quantity.T[start_idx:end_idx]  # Shape: (selected_phase_bins, pulses)
@@ -372,7 +443,6 @@ def plot_phase_slice_histograms_by_phase(data, left_phase, mid_phase, right_phas
     I_mean = I.mean(axis=0)
     threshold = np.min(I_mean[on_pulse_mask])    
 
-    # Derived quantities and De-biasing
     L = np.sqrt(Q**2 + U**2)
     L_true = np.zeros_like(L)
     L_sigma = L / off_pulse_std
@@ -451,7 +521,7 @@ def plot_poincare_aitoff_from_data(data, start_phase, end_phase, on_pulse, obs_i
     lon = 2 * PA[start_idx:end_idx]
     lat = 2 * EA[start_idx:end_idx]
     lon = np.mod(lon + np.pi, 2 * np.pi) - np.pi  # Wrap to [-π, π]
-    colors = np.linspace(start_phase, end_phase, end_idx-start_idx)  # Phase gradient
+    colors = np.linspace(start_phase, end_phase, end_idx-start_idx)
 
     fig = plt.figure(figsize=(10, 5))
     ax = fig.add_subplot(111, projection='aitoff')
@@ -483,6 +553,14 @@ def plot_interactive_poincare_sphere(data, start_phase, end_phase, on_pulse, obs
     mask = L_sigma >= 1.57
     L_true[mask] = sigma_off * np.sqrt(L_sigma[mask]**2 - 1)
 
+    threshold = np.min(I[on_pulse_mask])
+    P = np.sqrt(Q**2 + U**2 + V**2)
+    P_sigma = P / sigma_off
+    P_true = np.zeros_like(P)
+    mask = P_sigma >= 1.57
+    P_true[mask] = sigma_off * np.sqrt(P_sigma[mask]**2 - 1)
+    p_frac = np.where(I >= threshold, P_true/I , 0)
+
     PA = 0.5 * np.arctan2(U, Q)
     EA = 0.5 * np.arctan2(V, L_true)
 
@@ -498,6 +576,11 @@ def plot_interactive_poincare_sphere(data, start_phase, end_phase, on_pulse, obs
     x = x[start_idx:end_idx]
     y = y[start_idx:end_idx]
     z = z[start_idx:end_idx]
+    
+    p_frac = p_frac[start_idx:end_idx]
+    x_arrow = p_frac * x
+    y_arrow = p_frac * y
+    z_arrow = p_frac * z
 
     fig = go.Figure()
 
@@ -508,6 +591,115 @@ def plot_interactive_poincare_sphere(data, start_phase, end_phase, on_pulse, obs
         line=dict(color='rgba(0,0,0,0.3)', width=2),
         name="Polarization Path"
     ))
+    
+    import colorsys
+    colors = []
+    for ph in np.linspace(0, 1, len(x_arrow)):
+        r, g, b = colorsys.hsv_to_rgb(ph, 1, 1)  # hsv values in [0,1]
+        colors.append(f'rgb({int(r*255)}, {int(g*255)}, {int(b*255)})')
+    
+    for xi, yi, zi, c in zip(x_arrow, y_arrow, z_arrow, colors):
+        fig.add_trace(go.Scatter3d(
+            x=[0, xi],
+            y=[0, yi],
+            z=[0, zi],
+            mode='lines',
+            line=dict(color=c, width=3),
+            showlegend=False
+        ))
+
+    u, v = np.meshgrid(np.linspace(0, 2*np.pi, 50), np.linspace(0, np.pi, 50))
+    xs = np.cos(u) * np.sin(v)
+    ys = np.sin(u) * np.sin(v)
+    zs = np.cos(v)
+
+    fig.add_trace(go.Surface(x=xs, y=ys, z=zs, opacity=0.2, showscale=False, colorscale='Greys'))
+
+    fig.update_layout(
+        scene=dict(
+            xaxis=dict(title='Q', range=[-1, 1]),
+            yaxis=dict(title='U', range=[-1, 1]),
+            zaxis=dict(title='V', range=[-1, 1]),
+            aspectmode='cube'
+        ),
+        margin=dict(l=0, r=0, t=30, b=0)
+    )
+    return fig
+
+def plot_interactive_poincare_sphere_subpulse(data, start_phase, end_phase, on_pulse, obs_id, pulse_index):
+    num_pulses, _, num_bins = data.shape
+    phase_axis = np.linspace(0, 1, num_bins)
+
+    I = data[pulse_index, 0, :]
+    Q = data[pulse_index, 1, :]
+    U = data[pulse_index, 2, :]
+    V = data[pulse_index, 3, :]
+
+    default_start, default_end = on_pulse
+    on_pulse_mask = (phase_axis >= default_start) & (phase_axis <= default_end)
+    off_pulse_mask = ~on_pulse_mask
+    sigma_off = np.std(I[off_pulse_mask])
+
+    L = np.sqrt(Q**2 + U**2)
+    L_true = np.zeros_like(L)
+    L_sigma = L / sigma_off
+    mask = L_sigma >= 1.57
+    L_true[mask] = sigma_off * np.sqrt(L_sigma[mask]**2 - 1)
+
+    threshold = np.min(I[on_pulse_mask])
+    P = np.sqrt(Q**2 + U**2 + V**2)
+    P_sigma = P / sigma_off
+    P_true = np.zeros_like(P)
+    mask = P_sigma >= 1.57
+    P_true[mask] = sigma_off * np.sqrt(P_sigma[mask]**2 - 1)
+    p_frac = np.where(I >= threshold, P_true/I , 0)
+
+    PA = 0.5 * np.arctan2(U, Q)
+    EA = 0.5 * np.arctan2(V, L_true)
+
+    lon = 2 * PA
+    lat = 2 * EA
+    x = np.cos(lat) * np.cos(lon)
+    y = np.cos(lat) * np.sin(lon)
+    z = np.sin(lat)
+
+    start_idx = np.searchsorted(phase_axis, start_phase)
+    end_idx = np.searchsorted(phase_axis, end_phase)
+
+    x = x[start_idx:end_idx]
+    y = y[start_idx:end_idx]
+    z = z[start_idx:end_idx]
+    
+    p_frac = p_frac[start_idx:end_idx]
+    x_arrow = p_frac * x
+    y_arrow = p_frac * y
+    z_arrow = p_frac * z
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter3d(
+        x=x, y=y, z=z,
+        mode='markers',
+        marker=dict(size=4, color=np.linspace(0, 1, len(x)), colorscale='hsv'),
+        line=dict(color='rgba(0,0,0,0.3)', width=2),
+        name="Polarization Path"
+    ))
+    
+    import colorsys
+    colors = []
+    for ph in np.linspace(0, 1, len(x_arrow)):
+        r, g, b = colorsys.hsv_to_rgb(ph, 1, 1)  # hsv values in [0,1]
+        colors.append(f'rgb({int(r*255)}, {int(g*255)}, {int(b*255)})')
+    
+    for xi, yi, zi, c in zip(x_arrow, y_arrow, z_arrow, colors):
+        fig.add_trace(go.Scatter3d(
+            x=[0, xi],
+            y=[0, yi],
+            z=[0, zi],
+            mode='lines',
+            line=dict(color=c, width=3),
+            showlegend=False
+        ))
 
     u, v = np.meshgrid(np.linspace(0, 2*np.pi, 50), np.linspace(0, np.pi, 50))
     xs = np.cos(u) * np.sin(v)
