@@ -60,7 +60,7 @@ def load_data(uploaded_file):
 @st.cache_data
 def generate_plot1(data, start_phase, end_phase, obs_id):
     return plot_waterfalls_and_profiles(data, start_phase, end_phase, obs_id)
-@st.fragment
+#@st.fragment
 def H1(data):
     st.header("Waterfall and Integrated Stokes Parameters")
     col1, col2 = st.columns(2)
