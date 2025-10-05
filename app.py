@@ -13,18 +13,6 @@ from modules.plots import *
 
 st.set_page_config(page_title="Pulsar Polarimeter", layout="wide")
 
-st.markdown(
-    """
-    <style>
-    .stPlotlyChart, .stImage, .stPyplot {
-        width: 100% !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-
 st.title("Pulsar Polarimeter")
 st.markdown("""
 <h4>
