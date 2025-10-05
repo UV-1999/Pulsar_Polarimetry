@@ -69,7 +69,7 @@ def H1(data):
     with col2:
         end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=def_end, step=0.001, format="%.3f", key="h12")
     fig = generate_plot1(data, start_phase, end_phase, obs_id)
-    st.pyplot(fig)
+    st.pyplot(fig, use_container_width=True)
    
 @st.cache_data
 def generate_plot2(data, start_phase, end_phase, on_pulse, pulse_index, obs_id):
@@ -89,7 +89,7 @@ def H2(data):
     with col3:
         pulse_index = st.number_input("Pulse Index", min_value=0, max_value=mindex, value=top_indices[0], step=1)
     fig = generate_plot2(data, start_phase, end_phase, on_pulse, pulse_index, obs_id)
-    st.pyplot(fig)
+    st.pyplot(fig, use_container_width=True)
     
 @st.cache_data
 def generate_plot3(data, start_phase, end_phase, on_pulse, obs_id):
@@ -103,7 +103,7 @@ def H3(data):
     with col2:
         end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=def_end, step=0.001, format="%.3f", key="h32")
     fig = generate_plot3(data, start_phase, end_phase, on_pulse, obs_id)
-    st.pyplot(fig)
+    st.pyplot(fig, use_container_width=True)
     
 @st.cache_data
 def generate_plot4(data, start_phase, end_phase, on_pulse, obs_id):
@@ -117,7 +117,7 @@ def H4(data):
     with col2:
         end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=def_end, step=0.001, format="%.3f", key="h42")
     fig = generate_plot4(data, start_phase, end_phase, on_pulse, obs_id)
-    st.pyplot(fig)
+    st.pyplot(fig, use_container_width=True)
     
 @st.cache_data
 def generate_plot5(data, left_phase, mid_phase, right_phase, on_pulse, obs_id):
@@ -133,7 +133,7 @@ def H5(data):
     with col3:
         right_phase = st.number_input("Right Phase", min_value=0.0, max_value=1.0, value=def_end, step=0.001, format="%.3f", key="h53")
     fig = generate_plot5(data, left_phase, mid_phase, right_phase, on_pulse, obs_id)
-    st.pyplot(fig)
+    st.pyplot(fig, use_container_width=True)
     
 @st.cache_data
 def generate_plot6(data, start_phase, end_phase, on_pulse, obs_id):
@@ -150,7 +150,7 @@ def H6(data):
     with col2:
         end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=def_end, step=0.001, format="%.3f", key="h62")
     fig = generate_plot6(data, start_phase, end_phase, on_pulse, obs_id)
-    st.pyplot(fig)
+    st.pyplot(fig, use_container_width=True)
     
 @st.cache_data
 def generate_plot7(data, start_phase, end_phase, on_pulse, obs_id):
@@ -182,7 +182,7 @@ def H8(data):
     with col2:
         end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=def_end, step=0.001, format="%.3f", key="h82")
     fig = generate_plot8(data, start_phase, end_phase, on_pulse, obs_id)
-    st.pyplot(fig)
+    st.pyplot(fig, use_container_width=True)
     
 @st.cache_data
 def generate_plot9(data, on_pulse, cphase, obs_id):
@@ -196,7 +196,7 @@ def H9(data):
     with col:
         cphase = st.number_input("Phase", min_value=0.0, max_value=1.0, value=0.5, step=0.001, format="%.3f", key="h91")
     fig = generate_plot9(data, on_pulse, cphase, obs_id)
-    st.pyplot(fig)
+    st.pyplot(fig, use_container_width=True)
     
 @st.cache_data
 def generate_plot10(data, start_phase, end_phase, on_pulse, obs_id):
@@ -212,7 +212,7 @@ def H10(data):
     with col2:
         end_phase = st.number_input("End Phase", min_value=0.0, max_value=1.0, value=def_end, step=0.001, format="%.3f", key="h102")
     fig = generate_plot10(data, start_phase, end_phase, on_pulse, obs_id)
-    st.pyplot(fig)
+    st.pyplot(fig, use_container_width=True)
 
 @st.cache_data
 def generate_plot11(data, start_phase, end_phase, on_pulse, obs_id, pulse_index):
