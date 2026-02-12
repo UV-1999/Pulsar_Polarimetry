@@ -234,7 +234,7 @@ def plot_polarisation_parameters(data, start_phase, end_phase, on_pulse, obs_id)
     EA_masked = EA[phase_mask]
     x = p_frac_masked
     y = 2 * np.abs(EA_masked)
-    ax4.plot(x, y, color='tab:brown', alpha=0.6)
+    ax4.scatter(x, y, color='tab:brown', alpha=0.6)
 
     for i in range(len(x) - 1):
         ax4.annotate(
