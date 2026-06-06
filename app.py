@@ -19,8 +19,12 @@ st.markdown("""
 An open-source data-analysis tool for visualizing and exploring single-pulse polarimetry data from the  
 <a href="https://psrweb.jb.man.ac.uk/meertime/singlepulse/" target="_blank">MeerTime Single Pulse Database</a>.
 <br><br>
-An upgraded (with further development ongoing) version can be found at: https://www.ncac.torun.pl/~pmarmat/
-Credits and huge thanks to [Manav Marmat](https://github.com/AntimonyTrisulfide) for making this possible.
+An upgraded (with further development ongoing) version can be found here: 
+<a href="https://www.ncac.torun.pl/~pmarmat/" target="_blank">Pulsar-PReSPIDAR</a>
+<br><br>
+Credits and huge thanks to 
+<a href="https://antimonytrisulfide.github.io/" target="_blank">Manav Marmat</a>
+for making this possible.
 </h4>
 """, unsafe_allow_html=True)
 with st.expander("About this App", expanded=False):
