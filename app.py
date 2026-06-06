@@ -18,7 +18,7 @@ st.markdown("""
 <h4>
 An open-source data-analysis tool for visualizing and exploring single-pulse polarimetry data from the  
 <a href="https://psrweb.jb.man.ac.uk/meertime/singlepulse/" target="_blank">MeerTime Single Pulse Database</a>.
-<br>
+<br><br>
 An upgraded (with further development ongoing) version can be found at: https://www.ncac.torun.pl/~pmarmat/
 Credits and huge thanks to [Manav Marmat](https://github.com/AntimonyTrisulfide) for making this possible.
 </h4>
